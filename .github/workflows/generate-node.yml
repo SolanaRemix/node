@@ -1,10 +1,11 @@
+---
 name: Generate Node
 
 on:
   # Schedule trigger - runs daily at midnight UTC
   schedule:
     - cron: '0 0 * * *'
-  
+
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -24,7 +25,7 @@ on:
         options:
           - 'true'
           - 'false'
-  
+
   # Trigger on issue comments for mentions
   issue_comment:
     types: [created]
@@ -34,113 +35,116 @@ jobs:
     runs-on: ubuntu-latest
     # Only run on specific mention triggers
     if: |
-      github.event_name == 'schedule' || 
+      github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' && 
+      (github.event_name == 'issue_comment' &&
        contains(github.event.comment.body, '@SMSDAO') ||
        contains(github.event.comment.body, '@fixnodes') ||
        contains(github.event.comment.body, '@smsdao') ||
        contains(github.event.comment.body, '@fixnode') ||
        contains(github.event.comment.body, '@modules'))
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Configure workflow settings
         id: config
         run: |
           # Set dry-run default to true
           DRY_RUN="${{ github.event.inputs.dry_run || 'true' }}"
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
-          
+
           # Set pings disabled by default
           ENABLE_PINGS="${{ github.event.inputs.enable_pings || 'false' }}"
           echo "enable_pings=$ENABLE_PINGS" >> $GITHUB_OUTPUT
-          
+
           # Blacklist is empty (none)
           echo "blacklist=" >> $GITHUB_OUTPUT
-          
+
           echo "Configuration:"
           echo "  Dry Run: $DRY_RUN"
           echo "  Enable Pings: $ENABLE_PINGS"
           echo "  Blacklist: none"
-      
+
       - name: Scan and update node modules
         id: scan
         run: |
           echo "Scanning node modules..."
-          
+
           # Create or update modules list
           MODULES_FOUND=""
-          
+
           # Check if package.json exists
           if [ -f "package.json" ]; then
             echo "Found package.json"
             if command -v jq &> /dev/null; then
-              MODULES_FOUND=$(cat package.json | jq -r '.dependencies // {} | keys[]' 2>/dev/null || echo "")
+              MODULES_FOUND=$(cat package.json | \
+                jq -r '.dependencies // {} | keys[]' 2>/dev/null || echo "")
             fi
           fi
-          
+
           # Scan for common node files
-          FILES_TO_TRACK=$(find . -maxdepth 3 -type f \( -name "*.js" -o -name "*.ts" -o -name "*.json" \) 2>/dev/null | head -20 || echo "")
-          
+          FILES_TO_TRACK=$(find . -maxdepth 3 -type f \
+            \( -name "*.js" -o -name "*.ts" -o -name "*.json" \) \
+            2>/dev/null | head -20 || echo "")
+
           echo "modules_found=$MODULES_FOUND" >> $GITHUB_OUTPUT
           echo "files_tracked<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES_TO_TRACK" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-      
+
       - name: Update README with module table
         run: |
           echo "Updating README with module information..."
-          
+
           # Read current README
           if [ ! -f "README.md" ]; then
             echo "# node" > README.md
-            echo "Automates node modules Antivirus Safe find solution true Ai Agents Models" >> README.md
+            echo "Automates node modules" >> README.md
             echo "" >> README.md
           fi
-          
+
           # Check if table exists, if not add it
           if ! grep -q "| Module |" README.md; then
-            cat >> README.md << 'TABLE_EOF'
-
-## Node Modules Status
-
-| Module | Status | Version | Sync | Dependencies | Last Updated |
-|--------|--------|---------|------|--------------|--------------|
-| Core System | Active | 1.0.0 | ✓ | Multi-bit | Auto |
-
-## Triggers
-
-This bot automatically responds to mentions:
-- `@SMSDAO` - Triggers system scan and repair
-- `@fixnodes` - Triggers node repair workflow  
-- `@fixnode` - Triggers single node repair
-- `@modules` - Triggers module dependency check
-
-## Configuration
-
-- **Dry Run**: Enabled by default (no changes made)
-- **Pings**: Disabled by default
-- **Blacklist**: None
-- **Schedule**: Daily at midnight UTC
-
-## Usage
-
-Comment on any issue or PR with the trigger mentions above to activate the bot.
-The bot will automatically scan files, sync dependencies, and update this table.
-
-TABLE_EOF
+            {
+              echo ""
+              echo "## Node Modules Status"
+              echo ""
+              echo "| Module | Status | Version | Sync | Dependencies | Last Updated |"
+              echo "|--------|--------|---------|------|--------------|--------------|"
+              echo "| Core System | Active | 1.0.0 | ✓ | Multi-bit | Auto |"
+              echo ""
+              echo "## Triggers"
+              echo ""
+              echo "This bot automatically responds to mentions:"
+              echo "- @SMSDAO - Triggers system scan and repair"
+              echo "- @fixnodes - Triggers node repair workflow"
+              echo "- @fixnode - Triggers single node repair"
+              echo "- @modules - Triggers module dependency check"
+              echo ""
+              echo "## Configuration"
+              echo ""
+              echo "- Dry Run: Enabled by default (no changes made)"
+              echo "- Pings: Disabled by default"
+              echo "- Blacklist: None"
+              echo "- Schedule: Daily at midnight UTC"
+              echo ""
+              echo "## Usage"
+              echo ""
+              echo "Comment on any issue or PR with the trigger mentions above."
+              echo "The bot will automatically scan files, sync dependencies, and update."
+              echo ""
+            } >> README.md
           fi
-          
+
           echo "README updated successfully"
-      
+
       - name: Create Pull Request
         if: steps.config.outputs.dry_run == 'false'
         uses: peter-evans/create-pull-request@v6
@@ -152,55 +156,55 @@ TABLE_EOF
           title: 'Auto-update: Node Modules Status'
           body: |
             ## Auto-generated Node Modules Update
-            
-            This PR was automatically generated by the node modules monitoring bot.
-            
+
+            This PR was automatically generated by the bot.
+
             ### Mentions
-            @SMSDAO @fixnodes 
-            
+            @SMSDAO @fixnodes
+
             ### Changes
             - Updated node modules status table
             - Synced dependencies
             - Scanned for file changes
-            
+
             ### Configuration
             - Dry Run: ${{ steps.config.outputs.dry_run }}
             - Enable Pings: ${{ steps.config.outputs.enable_pings }}
             - Blacklist: none
-            
+
             **Triggered by**: ${{ github.event_name }}
             **Run ID**: ${{ github.run_id }}
           labels: |
             automated
             dependencies
-      
+
       - name: Comment on trigger issue
         if: |
-          github.event_name == 'issue_comment' && 
+          github.event_name == 'issue_comment' &&
           steps.config.outputs.enable_pings == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const body = `
             ✅ Node modules scan triggered successfully!
-            
+
             @SMSDAO @fixnodes @modules
-            
+
             **Configuration:**
             - Dry Run: ${{ steps.config.outputs.dry_run }}
             - Enable Pings: ${{ steps.config.outputs.enable_pings }}
             - Blacklist: none
-            
-            The workflow is processing your request. Check the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
+            Check the [Actions tab](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
             `;
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: body
             });
-      
+
       - name: Summary
         run: |
           echo "### Workflow Summary" >> $GITHUB_STEP_SUMMARY
@@ -211,3 +215,4 @@ TABLE_EOF
           echo "- **Blacklist**: none" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Workflow completed successfully" >> $GITHUB_STEP_SUMMARY
+
