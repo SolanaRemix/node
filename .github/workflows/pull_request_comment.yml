@@ -1,0 +1,7 @@
+- name: Check comment trigger
+  if: contains(github.event.comment.body, '@repair')
+  run: |
+    echo "🚀 Running Atomic Node Repair..."
+    pnpm install --frozen-lockfile
+    pnpm run build --if-present
+    pnpm run test --if-present
