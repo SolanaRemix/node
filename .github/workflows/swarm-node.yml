@@ -1,45 +1,44 @@
-name: Agentic Swarm WASM Repair (Dev)
+name: 🌐 Agentic Swarm WASM Repair
 
 on:
-  workflow_dispatch:
   pull_request:
     branches: [ "dev", "feature/**" ]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
 
 jobs:
-  swarm-node:
+  swarm:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [18.x, 20.x, 22.x, 24.x]   # full dynamic alignment
+        node: [18.x, 20.x, 22.x, 24.x]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: "pnpm"
 
-      - name: Clean entropy
-        run: |
-          rm -rf node_modules
-          rm -f package-lock.json pnpm-lock.yaml yarn.lock
+      - name: 🧹 Clean entropy
+        if: contains(github.event.comment.body, '@clean')
+        run: rm -rf node_modules && rm -f package-lock.json pnpm-lock.yaml yarn.lock
 
-      - name: Install dependencies
+      - name: 🔒 Frozen install
         run: pnpm install --frozen-lockfile
 
-      - name: Verify build
+      - name: 📦 Build
         run: pnpm run build --if-present
 
-      - name: Run tests
+      - name: ✅ Test
         run: pnpm run test --if-present
 
-      - name: Repair artifacts
+      - name: 🔧 WASM repair
+        if: contains(github.event.comment.body, '@repair')
         run: |
-          echo "=== SWARM WASM REPAIR ==="
+          echo "=== WASM Repair ==="
           if [ -f tsconfig.json ]; then
             sed -i 's/"strict": false/"strict": true/' tsconfig.json
           fi
-          echo "Repair complete."
