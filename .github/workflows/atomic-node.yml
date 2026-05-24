@@ -1,0 +1,46 @@
+name: Atomic Node Repair (Prod)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: "0 0 * * *"   # daily midnight UTC repair
+
+jobs:
+  atomic-node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20.x, 22.x]   # last 2 stable versions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "pnpm"
+
+      - name: Clean entropy
+        run: |
+          rm -rf node_modules
+          rm -f package-lock.json pnpm-lock.yaml yarn.lock
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify build
+        run: pnpm run build --if-present
+
+      - name: Run tests
+        run: pnpm run test --if-present
+
+      - name: Refresh docs + changelog
+        run: |
+          echo "Updating docs and changelog..."
+          pnpm run docs:generate || true
+          pnpm run changelog || true
