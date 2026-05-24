@@ -8,7 +8,7 @@
     "build": "echo build",
     "test": "echo test",
     "lint": "echo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit --strict"
   },
   "devDependencies": {
     "typescript": "^5.8.3"
