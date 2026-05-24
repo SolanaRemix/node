@@ -2,10 +2,14 @@ name: 🚀 Atomic CI
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches:
+      - main
+      - dev
 
   pull_request:
-    branches: ["main", "dev"]
+    branches:
+      - main
+      - dev
 
   workflow_dispatch:
 
@@ -24,7 +28,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [20.x, 22.x, 24.x]
+        node:
+          - 20.x
+          - 22.x
+          - 24.x
 
     steps:
       - name: 📥 Checkout
