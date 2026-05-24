@@ -1,50 +1,41 @@
-name: 🚀 Atomic Node Repair
+name: 🌐 Agentic Swarm WASM Repair
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "dev", "feature/**" ]
   issue_comment:
     types: [created]
-  schedule:
-    - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
-  atomic:
+  swarm:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [20.x, 22.x]
+        node: [18.x, 20.x, 22.x, 24.x]
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: "pnpm"
 
       - name: 🧹 Clean entropy
-        if: contains(github.event.comment.body, '@clean')
         run: rm -rf node_modules && rm -f package-lock.json pnpm-lock.yaml yarn.lock
 
       - name: 🔒 Frozen install
-        if: contains(github.event.comment.body, '@lock') || always()
         run: pnpm install --frozen-lockfile
 
       - name: 📦 Build
-        if: contains(github.event.comment.body, '@build') || always()
         run: pnpm run build --if-present
 
       - name: ✅ Test
-        if: contains(github.event.comment.body, '@test') || always()
         run: pnpm run test --if-present
 
-      - name: 📖 Docs refresh
-        if: contains(github.event.comment.body, '@docs')
-        run: pnpm run docs:generate || true
-
-      - name: 📝 Changelog update
-        if: contains(github.event.comment.body, '@changelog')
-        run: pnpm run changelog || true
+      - name: 🔧 WASM repair
+        run: |
+          echo "=== WASM Repair ==="
+          if [ -f tsconfig.json ]; then
+            sed -i 's/"strict": false/"strict": true/' tsconfig.json
+          fi
