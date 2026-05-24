@@ -1,0 +1,16 @@
+{
+  "name": "atomic-node",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "echo build",
+    "test": "echo test",
+    "lint": "echo lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
