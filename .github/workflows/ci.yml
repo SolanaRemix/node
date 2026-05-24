@@ -2,16 +2,10 @@ name: 🚀 Atomic CI
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [ "main", "dev" ]
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [ "main", "dev" ]
   workflow_dispatch:
-  schedule:
-    - cron: "0 2 * * *"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -21,13 +15,12 @@ permissions:
   contents: read
 
 jobs:
-  atomic:
+  build-test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node: [20.x, 22.x]
-
+        node: [18.x, 20.x, 22.x, 24.x]   # full dynamic coverage
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -61,15 +54,9 @@ jobs:
       - name: 🔐 Audit
         run: pnpm audit --prod || true
 
-      - name: 📖 Generate Docs
-        run: pnpm run docs:generate --if-present
-
-      - name: 📝 Changelog
-        run: pnpm run changelog --if-present
-
       - name: 📤 Upload Logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: atomic-logs-node-${{ matrix.node }}
+          name: logs-node-${{ matrix.node }}
           path: ./
