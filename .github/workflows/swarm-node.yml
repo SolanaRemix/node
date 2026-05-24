@@ -1,0 +1,45 @@
+name: Agentic Swarm WASM Repair (Dev)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ "dev", "feature/**" ]
+
+jobs:
+  swarm-node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18.x, 20.x, 22.x, 24.x]   # full dynamic alignment
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "pnpm"
+
+      - name: Clean entropy
+        run: |
+          rm -rf node_modules
+          rm -f package-lock.json pnpm-lock.yaml yarn.lock
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify build
+        run: pnpm run build --if-present
+
+      - name: Run tests
+        run: pnpm run test --if-present
+
+      - name: Repair artifacts
+        run: |
+          echo "=== SWARM WASM REPAIR ==="
+          if [ -f tsconfig.json ]; then
+            sed -i 's/"strict": false/"strict": true/' tsconfig.json
+          fi
+          echo "Repair complete."
