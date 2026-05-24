@@ -1,0 +1,66 @@
+name: 🌐 Agentic Swarm WASM Repair (Dev)
+
+on:
+  push:
+    branches: [dev, feature/**]
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      wasm-strict:
+        description: 'WASM strict mode'
+        default: 'true'
+
+concurrency:
+  group: swarm-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  swarm-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node: [18.x, 20.x, 22.x, 24.x]
+      fail-fast: false
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🌊 Setup Swarm Environment
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ matrix.node }}
+          enable-wasm: ${{ github.event.inputs.wasm-strict || 'true' }}
+
+      - name: 🧬 Multi-version Alignment
+        run: |
+          node --version
+          pnpm tsc --version
+          echo "✅ Alignment verified"
+
+      - name: 🛡️ WASM TypeScript Enforcement
+        run: pnpm run typecheck
+
+      - name: 🏗 Build with Repair
+        run: pnpm run build
+
+      - name: ⚡ Parallel Test
+        run: pnpm run test
+
+      - name: 📊 Generate Swarm Report
+        run: |
+          echo "## Swarm Report" > swarm-report.md
+          echo "- Node: ${{ matrix.node }}" >> swarm-report.md
+          echo "- WASM: ${{ github.event.inputs.wasm-strict || 'true' }}" >> swarm-report.md
+          echo "- Time: $(date)" >> swarm-report.md
+
+      - name: 💾 Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: swarm-report-node-${{ matrix.node }}
+          path: swarm-report.md
