@@ -1,5 +1,5 @@
 # 🚀 Node Repair Workflows
-
+![CI](https://github.com/SolanaRemix/node/actions/workflows/ci.yml/badge.svg)
 This repository runs **dual CI/CD workflows** to keep production deterministic and development dynamic:
 
 - **🚀 Atomic Node Repair (Prod)**  
@@ -32,6 +32,18 @@ You can trigger workflows via **emoji commands** in PRs/issues:
 - **Development (Swarm)** → Node.js **18.x → 24.x**
 
 ---
+
+# Atomic Node
+
+Production-grade Node.js + PNPM + WASM infrastructure.
+
+## Stack
+
+- Node.js 22
+- PNPM
+- TypeScript
+- GitHub Actions
+- WASM validation
 
 ## 📜 Governance
 
