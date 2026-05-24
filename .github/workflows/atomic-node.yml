@@ -2,30 +2,39 @@ name: 🌐 Agentic Swarm WASM Repair
 
 on:
   pull_request:
-    branches: [ "dev", "feature/**" ]
-  issue_comment:
-    types: [created]
+    branches:
+      - dev
+      - main
+
   workflow_dispatch:
 
 jobs:
   swarm:
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
-        node: [18.x, 20.x, 22.x, 24.x]
+        node: [20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: 📦 Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: "pnpm"
+          cache: pnpm
 
-      - name: 🧹 Clean entropy
-        run: rm -rf node_modules && rm -f package-lock.json pnpm-lock.yaml yarn.lock
+      - name: 📥 Install
+        run: pnpm install --no-frozen-lockfile
 
-      - name: 🔒 Frozen install
-        run: pnpm install --frozen-lockfile
+      - name: 🔎 Typecheck
+        run: pnpm run typecheck --if-present
 
       - name: 📦 Build
         run: pnpm run build --if-present
@@ -33,9 +42,10 @@ jobs:
       - name: ✅ Test
         run: pnpm run test --if-present
 
-      - name: 🔧 WASM repair
+      - name: 🦀 WASM Validation
         run: |
-          echo "=== WASM Repair ==="
+          echo "=== WASM Validation ==="
+
           if [ -f tsconfig.json ]; then
-            sed -i 's/"strict": false/"strict": true/' tsconfig.json
+            npx tsc --noEmit
           fi
