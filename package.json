@@ -1,16 +1,17 @@
-{
+﻿{
   "name": "atomic-node",
-  "private": true,
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "echo build",
-    "test": "echo test",
-    "lint": "echo lint",
-    "typecheck": "tsc --noEmit --strict"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "node --test dist/*.test.js",
+    "typecheck": "tsc --noEmit --strict",
+    "clean": "node -e \"require('fs').rmSync('node_modules',{recursive:true,force:true}); require('fs').rmSync('pnpm-lock.yaml',{force:true}); require('fs').rmSync('package-lock.json',{force:true}); require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "repair": "npm run clean && npm install && npm run build && npm run typecheck"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "typescript": "^5.8.3"
   }
 }
