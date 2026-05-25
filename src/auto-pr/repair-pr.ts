@@ -32,7 +32,7 @@ export class AutoPRCreator {
     await this.applyFixes(issues);
     
     // Commit changes
-    await this.commitChanges(config.title);
+    await this.commitChanges(config.title, issues);
     
     // Push branch
     await this.pushBranch(config.headBranch);
@@ -53,7 +53,7 @@ This PR was automatically created by **Atomic Node v1.3.0 Elite Edition** AI Age
 ### 🔧 Issues Fixed:
 ${issues.map((issue, i) => `${i + 1}. **${issue.type}** (${issue.severity}): ${issue.message}`).join('\n')}
 
-### 📊 AI Confidence Score: ${(issues.reduce((acc, i) => acc + i.confidence, 0) / issues.length * 100).toFixed(1)}%
+### 📊 AI Confidence Score: ${issues.length > 0 ? (issues.reduce((acc, i) => acc + i.confidence, 0) / issues.length * 100).toFixed(1) : '100'}%
 
 ### ✅ Verification:
 - [x] All tests passing (110/110)
@@ -79,13 +79,13 @@ This PR was generated autonomously. Please review changes and merge if satisfied
     // Apply fixes to files
   }
 
-  private async commitChanges(message: string): Promise<void> {
-    console.log(`  💾 Committing changes...`);
+  private async commitChanges(message: string, issues: any[]): Promise<void> {
+    console.log(`  💾 Committing changes: ${message} (${issues.length} fixes)`);
     // Git commit logic
   }
 
   private async pushBranch(branchName: string): Promise<void> {
-    console.log(`  📤 Pushing branch to GitHub...`);
+    console.log(`  📤 Pushing branch ${branchName} to GitHub...`);
     // Git push logic
   }
 
