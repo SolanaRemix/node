@@ -1,4 +1,4 @@
-﻿name: "🚀 Atomic Node Repair (Prod)"
+name: "🚀 Atomic Node Repair (Prod)"
 
 on:
   push:
@@ -24,7 +24,7 @@ on:
     secrets:
       NPM_TOKEN:
         required: false
-      GITHUB_TOKEN:
+      REPO_TOKEN:
         required: false
 
 env:
