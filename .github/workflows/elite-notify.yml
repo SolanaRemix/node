@@ -1,13 +1,36 @@
-﻿name: "📢 Elite Notifications"
+name: "📢 Elite Notifications"
 
 on:
   workflow_run:
-    workflows: ["🚀 Atomic Node Repair (Prod)", "🤖 Elite AI Agent"]
+    workflows: ["🚀 Atomic Node Repair (Prod)", "🤖 Elite AI Agent", "🌐 Agentic Swarm WASM Repair (Dev) - Elite Edition"]
     types: [completed]
+  workflow_dispatch:
+
+# Add permissions at the root level
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
+# Force bash shell
+defaults:
+  run:
+    shell: bash
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   notify:
     runs-on: ubuntu-latest
+    # Add permissions at job level too
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      actions: read
+    
     steps:
       - name: 📊 Generate Enterprise Report
         run: |
@@ -15,14 +38,25 @@ jobs:
           echo "- **Status:** ${{ github.event.workflow_run.conclusion }}" >> notification.md
           echo "- **Repository:** ${{ github.repository }}" >> notification.md
           echo "- **Time:** $(date)" >> notification.md
+          cat notification.md >> $GITHUB_STEP_SUMMARY
           
-      - name: 💬 Post to Discussion
+      - name: 💬 Create Issue on Failure
+        if: github.event.workflow_run.conclusion == 'failure'
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            await github.rest.discussions.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `📢 Workflow Complete: ${new Date().toISOString()}`,
-              body: `## Elite Notification\n\nWorkflow completed with status: **${{ github.event.workflow_run.conclusion }}**\n\n[View Run](${{ github.event.workflow_run.html_url }})`
-            });
+            const { repo, owner } = context.repo;
+            const workflowName = '${{ github.event.workflow_run.name }}';
+            
+            try {
+              const issue = await github.rest.issues.create({
+                owner,
+                repo,
+                title: `📢 Elite Alert: ${workflowName} failed`,
+                body: `## 🔴 Workflow Failure Alert\n\n**Workflow:** ${workflowName}\n**Status:** ${{ github.event.workflow_run.conclusion }}\n**Time:** ${new Date().toUTCString()}\n\n[View Run](${{ github.event.workflow_run.html_url }})`
+              });
+              console.log(`✅ Issue #${issue.data.number} created`);
+            } catch (error) {
+              console.log(`⚠️ Could not create issue: ${error.message}`);
+            }
