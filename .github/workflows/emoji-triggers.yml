@@ -1,4 +1,4 @@
-name: 🎯 Elite Emoji Triggers
+﻿name: "🎯 Elite Emoji Triggers"
 
 on:
   issue_comment:
@@ -15,59 +15,85 @@ jobs:
     if: contains(github.event.comment.body, '@repair') || contains(github.event.comment.body, '@clean') || contains(github.event.comment.body, '@lock') || contains(github.event.comment.body, '@build') || contains(github.event.comment.body, '@test') || contains(github.event.comment.body, '@docs') || contains(github.event.comment.body, '@changelog')
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout
+      - name: "📥 Checkout"
         uses: actions/checkout@v4
 
-      - name: 🔍 Parse Command
+      - name: "🔧 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: "📦 Setup PNPM"
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: "🔍 Parse Command"
         id: cmd
         run: |
           BODY="${{ github.event.comment.body }}"
-          if [[ "$BODY" == *"🚀 @repair"* ]]; then
+          if [[ "$BODY" == *"@repair"* ]]; then
             echo "command=repair" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"🧹 @clean"* ]]; then
+          elif [[ "$BODY" == *"@clean"* ]]; then
             echo "command=clean" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"🔒 @lock"* ]]; then
+          elif [[ "$BODY" == *"@lock"* ]]; then
             echo "command=lock" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"📦 @build"* ]]; then
+          elif [[ "$BODY" == *"@build"* ]]; then
             echo "command=build" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"✅ @test"* ]]; then
+          elif [[ "$BODY" == *"@test"* ]]; then
             echo "command=test" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"📖 @docs"* ]]; then
+          elif [[ "$BODY" == *"@docs"* ]]; then
             echo "command=docs" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"📝 @changelog"* ]]; then
+          elif [[ "$BODY" == *"@changelog"* ]]; then
             echo "command=changelog" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🚀 Execute @repair
+      - name: "🧹 Install Dependencies"
+        if: steps.cmd.outputs.command != ''
+        run: |
+          pnpm install --no-frozen-lockfile
+
+      - name: "🚀 Execute @repair"
         if: steps.cmd.outputs.command == 'repair'
         run: |
-          pnpm install --frozen-lockfile
+          pnpm run typecheck
           pnpm run build
           pnpm run test
-          pnpm run typecheck
 
-      - name: 🧹 Execute @clean
+      - name: "🧹 Execute @clean"
         if: steps.cmd.outputs.command == 'clean'
-        run: rm -rf node_modules pnpm-lock.yaml
+        run: rm -rf node_modules pnpm-lock.yaml package-lock.json
 
-      - name: 🔒 Execute @lock
+      - name: "🔒 Execute @lock"
         if: steps.cmd.outputs.command == 'lock'
         run: pnpm install --frozen-lockfile
 
-      - name: 📦 Execute @build
+      - name: "📦 Execute @build"
         if: steps.cmd.outputs.command == 'build'
         run: pnpm run build
 
-      - name: ✅ Execute @test
+      - name: "✅ Execute @test"
         if: steps.cmd.outputs.command == 'test'
         run: pnpm run test
 
-      - name: 📖 Execute @docs
+      - name: "📖 Execute @docs"
         if: steps.cmd.outputs.command == 'docs'
         run: |
           mkdir -p docs
           echo "# Docs refreshed $(date)" > docs/README.md
 
-      - name: 📝 Execute @changelog
+      - name: "📝 Execute @changelog"
         if: steps.cmd.outputs.command == 'changelog'
         run: echo "- $(date): Updated via emoji" >> CHANGELOG.md
+
+      - name: "💬 Post Comment"
+        if: steps.cmd.outputs.command != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Executed command: **${{ steps.cmd.outputs.command }}**\n\nTime: ${new Date().toUTCString()}`
+            })
