@@ -519,4 +519,3 @@ MIT License - see [LICENSE](LICENSE) file for details
 *Version: 1.2.0*
 
 *Status: 🟢 Production Ready*
-```
