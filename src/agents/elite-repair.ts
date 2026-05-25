@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🧠 Elite AI Repair Agent
  * v1.3.0 - AI-Powered Autonomous Repair System
  */
@@ -29,10 +29,11 @@ export interface Metrics {
 
 export class EliteRepairAgent {
   private context: RepairContext;
-  private learnings: Map<string, any> = new Map();
+  private learnings: Map<string, any>;
 
   constructor(context: RepairContext) {
     this.context = context;
+    this.learnings = new Map<string, any>();
     console.log(`🤖 Elite AI Agent initialized for ${context.repository}`);
   }
 
@@ -100,12 +101,18 @@ export class EliteRepairAgent {
       }
     }
     
+    // Store repair metrics in learnings
+    this.learnings.set('lastRepair', {
+      timestamp: new Date().toISOString(),
+      issuesFixed: filesAffected
+    });
+    
     const metrics: Metrics = {
       repairTime: Math.random() * 5 + 2,
       filesAffected: filesAffected,
       testsPassed: await this.runTests(),
       testsFailed: 0,
-      confidence: issues.reduce((acc, i) => acc + i.confidence, 0) / issues.length
+      confidence: issues.length > 0 ? issues.reduce((acc, i) => acc + i.confidence, 0) / issues.length : 0.95
     };
     
     console.log(`✓ Repair complete. ${filesAffected} files optimized.`);
@@ -113,19 +120,28 @@ export class EliteRepairAgent {
   }
 
   async generateReport(metrics: Metrics): Promise<string> {
+    const repairTimeStr = metrics.repairTime.toString();
+    const filesAffectedStr = metrics.filesAffected.toString();
+    const testsPassedStr = metrics.testsPassed.toString();
+    const confidenceStr = (metrics.confidence * 100).toFixed(1);
+    
     const report = `
 ╔════════════════════════════════════════════════════════════╗
 ║           🧠 ELITE AI AGENT REPORT                        ║
 ╠════════════════════════════════════════════════════════════╣
 ║ Repository: ${this.context.repository.padEnd(40)}║
 ║ Node Version: ${this.context.nodeVersion.padEnd(40)}║
-║ Repair Time: ${metrics.repairTime}s${' '.repeat(40 - (metrics.repairTime.ToString().Length + 13))}║
-║ Files Affected: ${metrics.filesAffected}${' '.repeat(40 - (metrics.filesAffected.ToString().Length + 17))}║
-║ Tests Passed: ${metrics.testsPassed}${' '.repeat(40 - (metrics.testsPassed.ToString().Length + 15))}║
-║ AI Confidence: ${(metrics.confidence * 100).toFixed(1)}%${' '.repeat(40 - ((metrics.confidence * 100).toFixed(1).Length + 15))}║
+║ Repair Time: ${repairTimeStr}s${' '.repeat(40 - (repairTimeStr.length + 13))}║
+║ Files Affected: ${filesAffectedStr}${' '.repeat(40 - (filesAffectedStr.length + 17))}║
+║ Tests Passed: ${testsPassedStr}${' '.repeat(40 - (testsPassedStr.length + 15))}║
+║ AI Confidence: ${confidenceStr}%${' '.repeat(40 - (confidenceStr.length + 15))}║
 ╚════════════════════════════════════════════════════════════╝
 `;
     return report;
+  }
+
+  getLastRepair(): any {
+    return this.learnings.get('lastRepair');
   }
 
   private async checkTypeScriptHealth(): Promise<boolean> {
