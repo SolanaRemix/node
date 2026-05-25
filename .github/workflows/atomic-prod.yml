@@ -24,7 +24,7 @@ on:
     secrets:
       NPM_TOKEN:
         required: false
-      GITHUB_TOKEN:
+      REPO_TOKEN:
         required: false
 
 env:
