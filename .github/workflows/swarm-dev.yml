@@ -19,12 +19,24 @@ on:
           - test
           - ai-optimize
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   swarm-repair:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      actions: read
+    
     strategy:
       matrix:
         node: [18, 20, 22, 24]
@@ -49,7 +61,6 @@ jobs:
           
       - name: 📦 Install dependencies
         run: |
-          # Try frozen lockfile first, fallback to regular install
           if [ -f "pnpm-lock.yaml" ]; then
             pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
           else
