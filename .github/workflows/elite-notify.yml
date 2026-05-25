@@ -1,0 +1,28 @@
+﻿name: "📢 Elite Notifications"
+
+on:
+  workflow_run:
+    workflows: ["🚀 Atomic Node Repair (Prod)", "🤖 Elite AI Agent"]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📊 Generate Enterprise Report
+        run: |
+          echo "## 📢 Elite Notification" >> notification.md
+          echo "- **Status:** ${{ github.event.workflow_run.conclusion }}" >> notification.md
+          echo "- **Repository:** ${{ github.repository }}" >> notification.md
+          echo "- **Time:** $(date)" >> notification.md
+          
+      - name: 💬 Post to Discussion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.discussions.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📢 Workflow Complete: ${new Date().toISOString()}`,
+              body: `## Elite Notification\n\nWorkflow completed with status: **${{ github.event.workflow_run.conclusion }}**\n\n[View Run](${{ github.event.workflow_run.html_url }})`
+            });
