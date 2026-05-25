@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 📊 Performance Monitoring System
  * v1.3.0 - Real-time Metrics & Analytics
  */
@@ -31,17 +31,24 @@ export class PerformanceMonitor {
 
   generateReport(): string {
     const recentMetrics = this.metrics.slice(-100);
-    const avgDuration = recentMetrics.reduce((sum, m) => sum + m.duration, 0) / recentMetrics.length;
-    const successRate = recentMetrics.filter(m => m.status === 'success').length / recentMetrics.length;
+    const avgDuration = recentMetrics.reduce((sum, m) => sum + m.duration, 0) / (recentMetrics.length || 1);
+    const successRate = recentMetrics.length > 0 
+      ? recentMetrics.filter(m => m.status === 'success').length / recentMetrics.length 
+      : 1;
+    
+    const avgDurationStr = avgDuration.toFixed(2);
+    const successRateStr = (successRate * 100).toFixed(1);
+    const totalRunsStr = this.metrics.length.toString();
+    const maxDurationStr = this.alertThresholds.maxDuration.toString();
     
     return `
 ╔════════════════════════════════════════════════════════════╗
 ║              📊 PERFORMANCE REPORT                        ║
 ╠════════════════════════════════════════════════════════════╣
-║ Average Duration: ${avgDuration.toFixed(2)}s${' '.repeat(40 - (avgDuration.toFixed(2).Length + 18))}║
-║ Success Rate: ${(successRate * 100).toFixed(1)}%${' '.repeat(40 - ((successRate * 100).toFixed(1).Length + 15))}║
-║ Total Runs: ${this.metrics.length}${' '.repeat(40 - (this.metrics.length.ToString().Length + 13))}║
-║ Alert Thresholds: ${this.alertThresholds.maxDuration}s${' '.repeat(40 - (this.alertThresholds.maxDuration.ToString().Length + 19))}║
+║ Average Duration: ${avgDurationStr}s${' '.repeat(40 - (avgDurationStr.length + 18))}║
+║ Success Rate: ${successRateStr}%${' '.repeat(40 - (successRateStr.length + 15))}║
+║ Total Runs: ${totalRunsStr}${' '.repeat(40 - (totalRunsStr.length + 13))}║
+║ Alert Thresholds: ${maxDurationStr}s${' '.repeat(40 - (maxDurationStr.length + 19))}║
 ╚════════════════════════════════════════════════════════════╝
 `;
   }
@@ -53,5 +60,19 @@ export class PerformanceMonitor {
 
   getMetrics(): PerformanceMetrics[] {
     return this.metrics;
+  }
+  
+  getSummary(): { avgDuration: number; successRate: number; totalRuns: number } {
+    const recentMetrics = this.metrics.slice(-100);
+    const avgDuration = recentMetrics.reduce((sum, m) => sum + m.duration, 0) / (recentMetrics.length || 1);
+    const successRate = recentMetrics.length > 0 
+      ? recentMetrics.filter(m => m.status === 'success').length / recentMetrics.length 
+      : 1;
+    
+    return {
+      avgDuration,
+      successRate,
+      totalRuns: this.metrics.length
+    };
   }
 }
