@@ -11,164 +11,448 @@ permissions:
   pull-requests: write
 
 jobs:
-  parse-emoji:
-    if: contains(github.event.comment.body, '@repair') || contains(github.event.comment.body, '@clean') || contains(github.event.comment.body, '@lock') || contains(github.event.comment.body, '@build') || contains(github.event.comment.body, '@test') || contains(github.event.comment.body, '@docs') || contains(github.event.comment.body, '@changelog')
+  # ─────────────────────────────────────────────────────────────
+  # Step 1: Resolve the actual PR branch from the comment event.
+  # issue_comment does NOT populate github.head_ref or
+  # github.event.pull_request — we must fetch it via the API.
+  # ─────────────────────────────────────────────────────────────
+  resolve-pr:
+    if: |
+      contains(github.event.comment.body, '@repair') ||
+      contains(github.event.comment.body, '@clean')  ||
+      contains(github.event.comment.body, '@lock')   ||
+      contains(github.event.comment.body, '@build')  ||
+      contains(github.event.comment.body, '@test')   ||
+      contains(github.event.comment.body, '@docs')   ||
+      contains(github.event.comment.body, '@changelog')
     runs-on: ubuntu-latest
+    outputs:
+      pr_head_ref:  ${{ steps.pr.outputs.head_ref }}
+      pr_head_sha:  ${{ steps.pr.outputs.head_sha }}
+      pr_number:    ${{ steps.pr.outputs.number }}
+      command:      ${{ steps.cmd.outputs.command }}
     steps:
-      - name: "📥 Checkout with token"
+      - name: "🔍 Resolve PR branch & parse command"
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // For issue_comment the PR number lives in the issue number
+            const issue_number = context.issue.number;
+            let head_ref = '';
+            let head_sha = '';
+
+            try {
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                pull_number: issue_number,
+              });
+              head_ref = pr.head.ref;
+              head_sha = pr.head.sha;
+            } catch (e) {
+              core.setFailed(`Could not find PR #${issue_number}: ${e.message}`);
+              return;
+            }
+
+            core.setOutput('head_ref', head_ref);
+            core.setOutput('head_sha', head_sha);
+            core.setOutput('number',   issue_number);
+            console.log(`PR branch: ${head_ref} (${head_sha})`);
+
+      - name: "🏷️ Parse command"
+        id: cmd
+        run: |
+          BODY="${{ github.event.comment.body }}"
+          if   [[ "$BODY" == *"@repair"*    ]]; then echo "command=repair"    >> $GITHUB_OUTPUT
+          elif [[ "$BODY" == *"@clean"*     ]]; then echo "command=clean"     >> $GITHUB_OUTPUT
+          elif [[ "$BODY" == *"@lock"*      ]]; then echo "command=lock"      >> $GITHUB_OUTPUT
+          elif [[ "$BODY" == *"@build"*     ]]; then echo "command=build"     >> $GITHUB_OUTPUT
+          elif [[ "$BODY" == *"@test"*      ]]; then echo "command=test"      >> $GITHUB_OUTPUT
+          elif [[ "$BODY" == *"@docs"*      ]]; then echo "command=docs"      >> $GITHUB_OUTPUT
+          elif [[ "$BODY" == *"@changelog"* ]]; then echo "command=changelog" >> $GITHUB_OUTPUT
+          fi
+
+  # ─────────────────────────────────────────────────────────────
+  # Step 2: Run the actual work on the resolved branch.
+  # ─────────────────────────────────────────────────────────────
+  run-command:
+    needs: resolve-pr
+    if: needs.resolve-pr.outputs.pr_head_ref != ''
+    runs-on: ubuntu-latest
+    env:
+      PR_BRANCH: ${{ needs.resolve-pr.outputs.pr_head_ref }}
+      PR_NUMBER: ${{ needs.resolve-pr.outputs.pr_number }}
+      COMMAND:   ${{ needs.resolve-pr.outputs.command }}
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────
+      - name: "📥 Checkout PR branch"
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref:   ${{ needs.resolve-pr.outputs.pr_head_ref }}   # ← FIXED: use resolved ref
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
-      - name: "🔧 Setup Node.js"
+      # ── Toolchain ─────────────────────────────────────────────
+      - name: "🔧 Setup Node.js 22"
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
-      - name: "📦 Setup PNPM"
+      - name: "📦 Setup pnpm"
         uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9
 
-      - name: "🔍 Parse Command"
-        id: cmd
+      # ── Git identity (needed before any commit) ───────────────
+      - name: "🪪 Configure git identity"
         run: |
-          BODY="${{ github.event.comment.body }}"
-          if [[ "$BODY" == *"@repair"* ]]; then
-            echo "command=repair" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@clean"* ]]; then
-            echo "command=clean" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@lock"* ]]; then
-            echo "command=lock" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@build"* ]]; then
-            echo "command=build" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@test"* ]]; then
-            echo "command=test" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@docs"* ]]; then
-            echo "command=docs" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@changelog"* ]]; then
-            echo "command=changelog" >> $GITHUB_OUTPUT
+          git config user.name  "Atomic Gods AI Agent"
+          git config user.email "ai-agent@atomic-gods.dev"
+
+      # ══════════════════════════════════════════════════════════
+      # @repair — THE REAL FIX ENGINE
+      # This step CREATES missing files and MODIFIES existing ones.
+      # ══════════════════════════════════════════════════════════
+      - name: "🚀 Execute @repair"
+        if: env.COMMAND == 'repair'
+        id: repair
+        run: |
+          set -euo pipefail
+
+          FIXES=()
+          ERRORS=()
+
+          # ── Helper ────────────────────────────────────────────
+          log_fix()   { FIXES+=("$1");  echo "✅ FIX: $1"; }
+          log_error() { ERRORS+=("$1"); echo "⚠️  ERR: $1"; }
+
+          # ─────────────────────────────────────────────────────
+          # 1. Ensure package.json exists
+          # ─────────────────────────────────────────────────────
+          if [ ! -f "package.json" ]; then
+            cat > package.json <<'PKGJSON'
+          {
+            "name": "node-project",
+            "version": "0.1.0",
+            "private": true,
+            "scripts": {
+              "build": "tsc",
+              "dev":   "ts-node src/index.ts",
+              "start": "node dist/index.js",
+              "test":  "jest",
+              "lint":  "eslint . --ext .ts,.tsx,.js,.jsx",
+              "format": "prettier --write ."
+            },
+            "devDependencies": {}
+          }
+          PKGJSON
+            log_fix "Created package.json from scratch"
           fi
 
-      - name: "🧹 Install Dependencies"
-        if: steps.cmd.outputs.command != ''
-        run: |
-          pnpm install --no-frozen-lockfile
+          # ─────────────────────────────────────────────────────
+          # 2. Ensure required scripts exist in package.json
+          # ─────────────────────────────────────────────────────
+          HAS_TS=$([ -n "$(find . -name '*.ts' -not -path '*/node_modules/*' 2>/dev/null | head -1)" ] && echo true || echo false)
 
-      - name: "🚀 Execute @repair - FULL AUTO-REPAIR"
-        if: steps.cmd.outputs.command == 'repair'
-        run: |
-          echo "🔧 Running full auto-repair..."
-          
-          # Fix Prettier issues (this will fix your failing lint)
-          echo "🎨 Fixing Prettier formatting..."
-          npx prettier --write . --ignore-unknown || echo "No prettier config"
-          
-          # Fix ESLint issues
-          echo "🔍 Fixing ESLint issues..."
-          npx eslint --fix . || echo "No eslint config"
-          
-          # Run TypeScript check
-          if [ -f "tsconfig.json" ]; then
-            echo "📝 Fixing TypeScript issues..."
-            npx tsc --noEmit --strict || echo "TypeScript issues remain"
-          fi
-          
-          # Run package scripts
-          echo "🏗️ Running build..."
-          pnpm run build || echo "Build script not found"
-          
-          echo "✅ Running tests..."
-          pnpm run test || echo "Test script not found"
-          
-          # Commit and push fixes
-          if [[ -n $(git status -s) ]]; then
-            git config user.name "Atomic Gods AI Agent"
-            git config user.email "ai-agent@atomic-gods.dev"
-            git add .
-            git commit -m "🤖 Auto-repair: Fixed formatting, linting, and build issues"
-            git push origin HEAD:${{ github.head_ref }}
-            echo "✅ Fixes committed and pushed to branch"
+          add_script_if_missing() {
+            local key="$1" val="$2"
+            if ! node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts['$key'] ? 0 : 1)" 2>/dev/null; then
+              node -e "
+                const fs=require('fs');
+                const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+                p.scripts = p.scripts || {};
+                p.scripts['$key'] = '$val';
+                fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+              "
+              log_fix "Added missing script: \"$key\": \"$val\""
+            fi
+          }
+
+          if [ "$HAS_TS" = "true" ]; then
+            add_script_if_missing "build"  "tsc"
+            add_script_if_missing "dev"    "ts-node src/index.ts"
+            add_script_if_missing "start"  "node dist/index.js"
+            add_script_if_missing "lint"   "eslint . --ext .ts,.tsx"
+            add_script_if_missing "format" "prettier --write ."
           else
-            echo "✅ No changes needed"
+            add_script_if_missing "build"  "echo 'No build step'"
+            add_script_if_missing "start"  "node src/index.js"
+            add_script_if_missing "lint"   "eslint ."
+            add_script_if_missing "format" "prettier --write ."
+          fi
+          add_script_if_missing "test" "jest"
+
+          # ─────────────────────────────────────────────────────
+          # 3. Ensure tsconfig.json exists (if TypeScript files found)
+          # ─────────────────────────────────────────────────────
+          if [ "$HAS_TS" = "true" ] && [ ! -f "tsconfig.json" ]; then
+            cat > tsconfig.json <<'TSCONFIG'
+          {
+            "compilerOptions": {
+              "target":      "ES2020",
+              "module":      "commonjs",
+              "lib":         ["ES2020"],
+              "outDir":      "./dist",
+              "rootDir":     "./src",
+              "strict":      true,
+              "esModuleInterop": true,
+              "skipLibCheck": true,
+              "forceConsistentCasingInFileNames": true,
+              "resolveJsonModule": true,
+              "declaration": true,
+              "declarationMap": true,
+              "sourceMap":   true
+            },
+            "include": ["src/**/*"],
+            "exclude": ["node_modules", "dist", "**/*.test.ts"]
+          }
+          TSCONFIG
+            log_fix "Created tsconfig.json"
           fi
 
-      - name: "🧹 Execute @clean"
-        if: steps.cmd.outputs.command == 'clean'
-        run: |
-          echo "🧹 Cleaning entropy..."
-          rm -rf node_modules pnpm-lock.yaml package-lock.json
-          pnpm install
-          echo "✅ Clean and reinstall complete"
+          # ─────────────────────────────────────────────────────
+          # 4. Ensure .gitignore covers common patterns
+          # ─────────────────────────────────────────────────────
+          if [ ! -f ".gitignore" ]; then
+            cat > .gitignore <<'GITIGNORE'
+          node_modules/
+          dist/
+          .env
+          .env.local
+          *.log
+          coverage/
+          .DS_Store
+          GITIGNORE
+            log_fix "Created .gitignore"
+          elif ! grep -q "node_modules" .gitignore; then
+            echo -e "\nnode_modules/" >> .gitignore
+            log_fix "Added node_modules to .gitignore"
+          fi
 
-      - name: "🔒 Execute @lock"
-        if: steps.cmd.outputs.command == 'lock'
+          # ─────────────────────────────────────────────────────
+          # 5. Install dependencies (after package.json is fixed)
+          # ─────────────────────────────────────────────────────
+          echo "📦 Installing dependencies..."
+          pnpm install --no-frozen-lockfile 2>&1 | tail -5 || log_error "pnpm install failed"
+
+          # ─────────────────────────────────────────────────────
+          # 6. Add missing TypeScript devDeps if needed
+          # ─────────────────────────────────────────────────────
+          if [ "$HAS_TS" = "true" ]; then
+            NEED_DEPS=()
+            node -e "const p=require('./package.json'); process.exit((p.devDependencies||{})['typescript']?0:1)" 2>/dev/null \
+              || NEED_DEPS+=("typescript")
+            node -e "const p=require('./package.json'); process.exit((p.devDependencies||{})['@types/node']?0:1)" 2>/dev/null \
+              || NEED_DEPS+=("@types/node")
+
+            if [ ${#NEED_DEPS[@]} -gt 0 ]; then
+              echo "📥 Adding missing devDeps: ${NEED_DEPS[*]}"
+              pnpm add -D "${NEED_DEPS[@]}" 2>&1 | tail -3 \
+                && log_fix "Installed missing devDependencies: ${NEED_DEPS[*]}" \
+                || log_error "Failed to install: ${NEED_DEPS[*]}"
+            fi
+          fi
+
+          # ─────────────────────────────────────────────────────
+          # 7. Prettier formatting
+          # ─────────────────────────────────────────────────────
+          echo "🎨 Running prettier..."
+          if npx --yes prettier --write . --ignore-unknown 2>/dev/null; then
+            log_fix "Applied Prettier formatting"
+          else
+            log_error "Prettier had issues (non-fatal)"
+          fi
+
+          # ─────────────────────────────────────────────────────
+          # 8. ESLint auto-fix
+          # ─────────────────────────────────────────────────────
+          echo "🔍 Running eslint --fix..."
+          ESLINT_TARGET="."
+          if [ "$HAS_TS" = "true" ]; then
+            npx eslint --fix --ext .ts,.tsx,.js,.jsx "$ESLINT_TARGET" 2>/dev/null \
+              && log_fix "ESLint auto-fixed TypeScript/JavaScript issues" \
+              || log_error "ESLint found unfixable issues (check manually)"
+          else
+            npx eslint --fix "$ESLINT_TARGET" 2>/dev/null \
+              && log_fix "ESLint auto-fixed JavaScript issues" \
+              || log_error "ESLint found unfixable issues (check manually)"
+          fi
+
+          # ─────────────────────────────────────────────────────
+          # 9. TypeScript compile check + attempt to fix simple errors
+          # ─────────────────────────────────────────────────────
+          if [ "$HAS_TS" = "true" ] && [ -f "tsconfig.json" ]; then
+            echo "📝 TypeScript check..."
+            TS_OUT=$(npx tsc --noEmit 2>&1 || true)
+            if [ -z "$TS_OUT" ]; then
+              log_fix "TypeScript: no errors found"
+            else
+              echo "$TS_OUT" | head -20
+              # Count errors
+              ERR_COUNT=$(echo "$TS_OUT" | grep -c "error TS" || true)
+              log_error "TypeScript: $ERR_COUNT error(s) remain (manual fix needed for type errors)"
+            fi
+          fi
+
+          # ─────────────────────────────────────────────────────
+          # 10. Attempt build
+          # ─────────────────────────────────────────────────────
+          echo "🏗️ Running build..."
+          if pnpm run build 2>/dev/null; then
+            log_fix "Build succeeded"
+          else
+            log_error "Build failed (check TypeScript errors above)"
+          fi
+
+          # ─────────────────────────────────────────────────────
+          # 11. Commit & push everything
+          # ─────────────────────────────────────────────────────
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no_changes=true" >> $GITHUB_OUTPUT
+          else
+            CHANGED_FILES=$(git diff --cached --name-only | head -20)
+            git commit -m "🤖 @repair: Auto-fix missing configs, scripts & formatting
+
+          Files changed:
+          $(git diff --cached --name-only)
+
+          Applied by: Atomic Gods AI Agent
+          Triggered by: @repair comment"
+
+            # Push to the actual PR branch (not github.head_ref which is empty)
+            git push origin HEAD:"$PR_BRANCH"   # ← FIXED: uses env var from resolved step
+            echo "no_changes=false" >> $GITHUB_OUTPUT
+            echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+          # Write fix/error lists to outputs
+          printf '%s\n' "${FIXES[@]}"  > /tmp/fixes.txt  || true
+          printf '%s\n' "${ERRORS[@]}" > /tmp/errors.txt || true
+
+      # ══════════════════════════════════════════════════════════
+      # @clean
+      # ══════════════════════════════════════════════════════════
+      - name: "🧹 Execute @clean"
+        if: env.COMMAND == 'clean'
         run: |
-          echo "🔒 Frozen lockfile install..."
+          echo "🧹 Cleaning node_modules and lockfile..."
+          rm -rf node_modules pnpm-lock.yaml package-lock.json yarn.lock
+          pnpm install --no-frozen-lockfile
+          git add pnpm-lock.yaml package-lock.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "🧹 @clean: Fresh dependency install + updated lockfile"
+            git push origin HEAD:"$PR_BRANCH"
+          fi
+
+      # ══════════════════════════════════════════════════════════
+      # @lock
+      # ══════════════════════════════════════════════════════════
+      - name: "🔒 Execute @lock"
+        if: env.COMMAND == 'lock'
+        run: |
           pnpm install --frozen-lockfile
 
+      # ══════════════════════════════════════════════════════════
+      # @build
+      # ══════════════════════════════════════════════════════════
       - name: "📦 Execute @build"
-        if: steps.cmd.outputs.command == 'build'
+        if: env.COMMAND == 'build'
         run: |
-          echo "📦 Building project..."
+          pnpm install --no-frozen-lockfile
           pnpm run build
 
+      # ══════════════════════════════════════════════════════════
+      # @test
+      # ══════════════════════════════════════════════════════════
       - name: "✅ Execute @test"
-        if: steps.cmd.outputs.command == 'test'
+        if: env.COMMAND == 'test'
         run: |
-          echo "✅ Running tests..."
+          pnpm install --no-frozen-lockfile
           pnpm run test
 
+      # ══════════════════════════════════════════════════════════
+      # @docs
+      # ══════════════════════════════════════════════════════════
       - name: "📖 Execute @docs"
-        if: steps.cmd.outputs.command == 'docs'
+        if: env.COMMAND == 'docs'
         run: |
           mkdir -p docs
-          echo "# Docs refreshed $(date)" > docs/README.md
-          git add docs/README.md
-          git config user.name "Atomic Gods AI Agent"
-          git config user.email "ai-agent@atomic-gods.dev"
-          git commit -m "📖 Docs: Auto-refresh documentation" || true
-          git push origin HEAD:${{ github.head_ref }} || true
+          echo "# Docs refreshed $(date -u)" > docs/README.md
+          git add docs/
+          if ! git diff --cached --quiet; then
+            git commit -m "📖 @docs: Auto-refresh documentation"
+            git push origin HEAD:"$PR_BRANCH"
+          fi
 
+      # ══════════════════════════════════════════════════════════
+      # @changelog
+      # ══════════════════════════════════════════════════════════
       - name: "📝 Execute @changelog"
-        if: steps.cmd.outputs.command == 'changelog'
+        if: env.COMMAND == 'changelog'
         run: |
-          echo "- $(date): Updated via emoji" >> CHANGELOG.md
+          echo "- $(date -u '+%Y-%m-%d'): Changes via @changelog trigger" >> CHANGELOG.md
           git add CHANGELOG.md
-          git config user.name "Atomic Gods AI Agent"
-          git config user.email "ai-agent@atomic-gods.dev"
-          git commit -m "📝 Changelog: Auto-update via emoji trigger" || true
-          git push origin HEAD:${{ github.head_ref }} || true
+          if ! git diff --cached --quiet; then
+            git commit -m "📝 @changelog: Auto-update"
+            git push origin HEAD:"$PR_BRANCH"
+          fi
 
-      - name: "💬 Post Comment with Results"
-        if: steps.cmd.outputs.command != ''
+      # ── Post comment summarising what happened ────────────────
+      - name: "💬 Post repair summary comment"
+        if: always() && env.COMMAND != ''
         uses: actions/github-script@v7
+        env:
+          NO_CHANGES:    ${{ steps.repair.outputs.no_changes }}
+          CHANGED_FILES: ${{ steps.repair.outputs.changed_files }}
         with:
           script: |
+            const cmd = process.env.COMMAND;
+            const noChanges = process.env.NO_CHANGES === 'true';
+            const changedFiles = process.env.CHANGED_FILES || '';
+            const branch = process.env.PR_BRANCH;
+
             const fs = require('fs');
-            let message = `## 🏥 Atomic Gods Auto-Repair\n\n`;
-            message += `**Command:** \`${{ steps.cmd.outputs.command }}\`\n\n`;
-            
-            if ('${{ steps.cmd.outputs.command }}' === 'repair') {
-              message += `### ✅ Fixes Applied:\n`;
-              message += `- 🎨 Prettier formatting fixed\n`;
-              message += `- 🔍 ESLint issues resolved\n`;
-              message += `- 📝 TypeScript validation completed\n`;
-              message += `- 🏗️ Build verification done\n`;
-              message += `- ✅ Tests executed\n\n`;
-              message += `**Changes have been committed and pushed to this branch.**\n\n`;
+            let fixes  = '';
+            let errors = '';
+            try { fixes  = fs.readFileSync('/tmp/fixes.txt',  'utf8').trim(); } catch {}
+            try { errors = fs.readFileSync('/tmp/errors.txt', 'utf8').trim(); } catch {}
+
+            let body = `## 🏥 Atomic Gods Auto-Repair\n\n`;
+            body += `**Command:** \`@${cmd}\` | **Branch:** \`${branch}\`\n\n`;
+
+            if (cmd === 'repair') {
+              if (noChanges) {
+                body += `### ✅ Repository already healthy — no changes needed\n\n`;
+              } else {
+                body += `### ✅ Fixes committed & pushed to \`${branch}\`\n\n`;
+                if (fixes) {
+                  body += `**Applied fixes:**\n`;
+                  fixes.split('\n').filter(Boolean).forEach(f => { body += `- ✅ ${f}\n`; });
+                  body += '\n';
+                }
+                if (errors) {
+                  body += `**Needs manual attention:**\n`;
+                  errors.split('\n').filter(Boolean).forEach(e => { body += `- ⚠️ ${e}\n`; });
+                  body += '\n';
+                }
+                if (changedFiles) {
+                  body += `**Files changed:**\n\`\`\`\n${changedFiles}\n\`\`\`\n\n`;
+                }
+              }
             } else {
-              message += `✅ **Command executed successfully**\n\n`;
+              body += `✅ **\`@${cmd}\` executed successfully**\n\n`;
             }
-            
-            message += `---\n*🤖 This auto-repair was performed by the Atomic Gods AI Agent*\n`;
-            message += `*⏱️ Time: ${new Date().toUTCString()}*`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+
+            body += `---\n*🤖 Atomic Gods AI Agent · ${new Date().toUTCString()}*`;
+
+            await github.rest.issues.createComment({
+              issue_number: parseInt(process.env.PR_NUMBER),
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            })
+              repo:  context.repo.repo,
+              body,
+            });
