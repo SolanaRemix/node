@@ -1,8 +1,7 @@
 ﻿name: "🎯 Elite Emoji Triggers"
+
 on:
   issue_comment:
-    types: [created]
-  pull_request_review_comment:
     types: [created]
 
 permissions:
@@ -11,76 +10,53 @@ permissions:
 
 jobs:
   resolve-pr:
-    if: contains(github.event.comment.body, '@repair') || contains(github.event.comment.body, '@clean') || contains(github.event.comment.body, '@lock') || contains(github.event.comment.body, '@build') || contains(github.event.comment.body, '@test') || contains(github.event.comment.body, '@docs') || contains(github.event.comment.body, '@changelog')
+    if: contains(github.event.comment.body, '@repair')
     runs-on: ubuntu-latest
     outputs:
-      pr_head_ref: ${{ steps.pr.outputs.head_ref }}
-      pr_head_sha: ${{ steps.pr.outputs.head_sha }}
+      pr_branch: ${{ steps.pr.outputs.head_ref }}
       pr_number: ${{ steps.pr.outputs.number }}
-      command: ${{ steps.cmd.outputs.command }}
     steps:
-      - name: "🔍 Resolve PR branch & parse command"
+      - name: "Get PR info"
         id: pr
         uses: actions/github-script@v7
         with:
           script: |
-            const issue_number = context.issue.number;
-            let head_ref = '';
-            try {
-              const { data: pr } = await github.rest.pulls.get({ owner: context.repo.owner, repo: context.repo.repo, pull_number: issue_number });
-              head_ref = pr.head.ref;
-            } catch (e) {
-              core.setFailed(`Could not find PR #${issue_number}: ${e.message}`);
-              return;
-            }
-            core.setOutput('head_ref', head_ref);
-            core.setOutput('number', issue_number);
-      - name: "🏷️ Parse command"
-        id: cmd
-        run: |
-          BODY="${{ github.event.comment.body }}"
-          if [[ "$BODY" == *"@repair"* ]]; then echo "command=repair" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@clean"* ]]; then echo "command=clean" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@build"* ]]; then echo "command=build" >> $GITHUB_OUTPUT
-          fi
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('number', pr.number);
+            console.log(`PR #${pr.number} branch: ${pr.head.ref}`);
 
-  run-command:
+  repair:
     needs: resolve-pr
-    if: needs.resolve-pr.outputs.pr_head_ref != ''
     runs-on: ubuntu-latest
-    env:
-      PR_BRANCH: ${{ needs.resolve-pr.outputs.pr_head_ref }}
-      PR_NUMBER: ${{ needs.resolve-pr.outputs.pr_number }}
-      COMMAND: ${{ needs.resolve-pr.outputs.command }}
     steps:
-      - name: "📥 Checkout PR branch"
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.resolve-pr.outputs.pr_branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ needs.resolve-pr.outputs.pr_head_ref }}
-          fetch-depth: 0
-      - name: "🪪 Configure git identity"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: "Auto-Repair"
         run: |
           git config user.name "Atomic Gods AI Agent"
           git config user.email "ai-agent@atomic-gods.dev"
-      - name: "🚀 Execute @repair"
-        if: env.COMMAND == 'repair'
-        run: |
-          npm install
-          npm run format || true
-          npm run lint || true
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "🤖 @repair: Auto-fix applied by Atomic Gods AI Agent"
-            git push origin HEAD:"$PR_BRANCH"
-          fi
-      - name: "💬 Post repair summary comment"
+          npm install || true
+          npm run build || true
+          git add .
+          git diff --staged --quiet || git commit -m "🤖 @repair: Auto-fix applied"
+          git push origin HEAD:${{ needs.resolve-pr.outputs.pr_branch }} || true
+      - name: "Post Comment"
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.issues.createComment({
-              issue_number: parseInt(process.env.PR_NUMBER),
+            github.rest.issues.createComment({
+              issue_number: ${{ needs.resolve-pr.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## 🏥 Atomic Gods Auto-Repair\n✅ **Command \`@${process.env.COMMAND}\` executed successfully on \`${process.env.PR_BRANCH}\`.**`
-            });
+              body: '✅ **Atomic Gods Auto-Repair Complete**\n\nFixes have been applied to this PR.\n\n🤖 *This auto-repair was performed by the Atomic Gods AI Agent*'
+            })

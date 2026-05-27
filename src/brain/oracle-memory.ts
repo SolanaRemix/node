@@ -1,47 +1,27 @@
-﻿import * as fs from 'fs';
-import * as path from 'path';
-
-export interface MemoryEntry {
-    id: string;
-    repo: string;
-    language: string;
-    issue: string;
-    fix: string;
-    confidence: number;
-    timestamp: number;
+﻿export class OracleMemory {
+  private memory: Map<string, any[]> = new Map();
+  
+  learn(repo: string, issue: string, fix: string, language: string): void {
+    if (!this.memory.has(repo)) this.memory.set(repo, []);
+    this.memory.get(repo)!.push({ issue, fix, language, timestamp: new Date() });
+    console.log(`🧠 Oracle Memory: Learned from ${repo}`);
+  }
+  
+  recall(repo: string): any[] {
+    return this.memory.get(repo) || [];
+  }
+  
+  suggest(repo: string, language: string): string[] {
+    const records = this.memory.get(repo) || [];
+    const languageRecords = records.filter(r => r.language === language);
+    return languageRecords.slice(0, 3).map(r => r.fix);
+  }
+  
+  getStats(): object {
+    let total = 0;
+    for (const records of this.memory.values()) total += records.length;
+    return { totalRepairs: total, totalRepositories: this.memory.size };
+  }
 }
 
-export class OracleMemory {
-    private memoryPath: string;
-    private memory: MemoryEntry[] = [];
-
-    constructor(baseDir: string = '.') {
-        this.memoryPath = path.join(baseDir, 'oracle-memory.json');
-        this.load();
-    }
-
-    private load(): void {
-        if (fs.existsSync(this.memoryPath)) {
-            try { this.memory = JSON.parse(fs.readFileSync(this.memoryPath, 'utf8')); }
-            catch { this.memory = []; }
-        }
-    }
-
-    public learn(repo: string, language: string, issue: string, fix: string, confidence: number = 0.95): void {
-        this.memory.push({
-            id: Math.random().toString(36).substring(2, 9),
-            repo, language, issue, fix, confidence, timestamp: Date.now()
-        });
-        if (this.memory.length > 10000) this.memory.shift();
-        fs.writeFileSync(this.memoryPath, JSON.stringify(this.memory, null, 2));
-    }
-
-    public getStats() {
-        const langs = Array.from(new Set(this.memory.map(m => m.language)));
-        return {
-            patternCount: this.memory.length,
-            languages: langs,
-            topSuggestion: this.memory.length ? this.memory[this.memory.length - 1].fix : "Awaiting Heuristics"
-        };
-    }
-}
+export const oracle = new OracleMemory();

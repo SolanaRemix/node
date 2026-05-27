@@ -1,21 +1,30 @@
 ﻿name: "📝 Auto-Changelog"
+
 on:
   push:
-    branches: [main]
+    branches: [main, master]
+  workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
-  generate:
+  changelog:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Generate & Commit Changelog"
+      - name: "Generate Changelog"
         run: |
+          echo "# 📝 Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## 🔧 Fixes" >> CHANGELOG.md
+          git log --pretty=format:"- %s" --since="7 days ago" --grep="fix:" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## 🚀 Features" >> CHANGELOG.md
+          git log --pretty=format:"- %s" --since="7 days ago" --grep="feat:" >> CHANGELOG.md
           git config user.name "Atomic Swarm Gods"
           git config user.email "swarm@atomic-gods.dev"
-          echo "# 📜 Auto-Generated Changelog" > CHANGELOG.md
-          git log --pretty=format:"- %s (%h)" --since="7 days ago" >> CHANGELOG.md
           git add CHANGELOG.md
-          git diff --cached --quiet || (git commit -m "docs: 📝 Auto-update changelog" && git push)
+          git diff --staged --quiet || (git commit -m "📝 Auto-changelog update" && git push)

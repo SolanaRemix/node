@@ -1,27 +1,33 @@
 ﻿{
   "name": "@atomic-gods/core",
   "version": "1.6.0",
-  "description": "Universal Auto-Repair System for Any Language",
+  "description": "Atomic Swarm Gods - Enterprise Auto-Repair System",
   "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
     "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build": "npx tsc",
+    "test": "node --test",
     "typecheck": "tsc --noEmit",
-    "test": "echo 'Tests passed.'",
-    "format": "prettier --write . || true",
-    "lint": "eslint . --fix || true",
-    "repair": "npm run format && npm run lint && npm run typecheck && npm run build"
+    "lint": "eslint . --ext .ts,.js",
+    "format": "prettier --write .",
+    "clean": "rm -rf node_modules dist package-lock.json",
+    "pipeline": "pwsh -File pipeline.ps1"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.19.0",
-    "express-rate-limit": "^7.2.0",
-    "socket.io": "^4.7.5",
-    "winston": "^3.13.0"
+    "socket.io": "^4.7.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.0",
-    "prettier": "^3.2.0",
-    "eslint": "^8.57.0"
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

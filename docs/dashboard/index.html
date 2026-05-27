@@ -1,103 +1,273 @@
 ﻿<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atomic Gods | Cyber Surgery</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <title>Atomic Gods - Surgery Room</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        :root { --bg: #0d0d1a; --surface: #13132a; --text: #e8e8f4; --accent: #7f77dd; --success: #1d9e75; --danger: #d85a30; }
-        [data-theme="light"] { --bg: #f4f4f9; --surface: #ffffff; --text: #1a1a2e; --accent: #534ab7; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; padding: 2rem; transition: background 0.3s; margin: 0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
-        .panel { background: var(--surface); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(127,119,221,0.2); }
-        .badge { background: var(--success); color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        input, select, button { width: 100%; padding: 0.8rem; margin-top: 0.5rem; border-radius: 4px; border: 1px solid rgba(127,119,221,0.3); background: var(--bg); color: var(--text); }
-        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; border: none; }
-        button:hover { opacity: 0.9; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        body { background: #0a0a1a; color: white; font-family: monospace; padding: 20px; }
+        .glass { background: rgba(20,25,50,0.4); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin: 10px 0; }
+        button { background: linear-gradient(135deg, #a855f7, #06b6d4); border: none; padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; margin-top: 10px; }
+        button:hover { transform: scale(1.02); box-shadow: 0 0 20px #a855f7; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; background: #1a1a33; border: 1px solid #333; color: white; border-radius: 10px; }
+        .terminal { background: #0a0a12; border-radius: 10px; padding: 15px; font-family: monospace; height: 300px; overflow-y: auto; font-size: 12px; }
+        .t-success { color: #10b981; }
+        .t-error { color: #f97316; }
+        .t-info { color: #06b6d4; }
+        .t-warn { color: #f4a84a; }
+        .status { font-size: 12px; margin-top: 10px; padding: 8px; border-radius: 8px; }
+        .status-success { background: rgba(16,185,129,0.2); color: #10b981; }
+        .status-error { background: rgba(249,115,22,0.2); color: #f97316; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { text-align: center; padding: 15px; background: rgba(20,25,50,0.4); border-radius: 16px; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #a855f7; }
+        .stat-label { font-size: 11px; color: #8b8b9e; margin-top: 5px; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .row-2 { grid-template-columns: 1fr; } }
+        hr { border-color: #333; margin: 15px 0; }
     </style>
 </head>
 <body>
-    <header>
-        <div>
-            <h1 style="margin: 0; color: var(--accent);">🏥 ATOMIC GODS | CYBER SURGERY</h1>
-            <p>System Version: <span class="badge">v1.6.0 Enterprise</span></p>
-        </div>
-        <div>
-            <button onclick="toggleTheme()" style="width: auto;">🌗 Theme</button>
-            <span id="ws-status" class="badge" style="background: var(--danger); margin-left: 1rem;">Offline</span>
-        </div>
-    </header>
+    <div class="glass">
+        <h1>⚡ ATOMIC GODS · SURGERY ROOM</h1>
+        <p>v1.6.0 — Autonomous AI Repair System | Enterprise Control Plane</p>
+    </div>
 
-    <div class="grid">
-        <div class="panel">
-            <h2>🧠 Oracle Intelligence</h2>
-            <p>Patterns Learned: <strong id="pattern-count">0</strong></p>
-            <p>Active Across: <span id="languages">-</span></p>
-            <p>Heuristic Suggestion: <em id="suggestion" style="color: var(--success);">Scanning...</em></p>
-            <button onclick="exportLogs()" style="margin-top: 1rem;">📥 Export Repair JSON</button>
+    <div class="stats">
+        <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Surgeries</div></div>
+        <div class="stat-card"><div class="stat-value" id="statSuccess">0</div><div class="stat-label">Successful</div></div>
+        <div class="stat-card"><div class="stat-value" id="statPRs">0</div><div class="stat-label">PRs Created</div></div>
+        <div class="stat-card"><div class="stat-value" id="statActive">0</div><div class="stat-label">Active</div></div>
+    </div>
+
+    <div class="row-2">
+        <div class="glass">
+            <h3>🔬 New Surgery Intake</h3>
+            <input type="text" id="repoUrl" placeholder="GitHub URL" value="https://github.com/SolanaRemix/node.git">
+            <input type="text" id="branchName" placeholder="Branch name" value="surgery/ai-repair">
+            <textarea id="prMsg" rows="3" placeholder="PR description">🏥 Atomic Gods AI Surgery — autonomous repair applied.
+
+Fixes: TypeScript config, missing scripts, dependency install.</textarea>
+            <label><input type="checkbox" id="keepFolder"> Keep surgery folder after repair (for debugging)</label>
+            <button onclick="startFullSurgery()">▶ START AI SURGERY</button>
+            <div id="surgeryStatus" class="status"></div>
         </div>
 
-        <div class="panel">
-            <h2>🔬 Deploy Surgery</h2>
-            <input type="text" id="repo" placeholder="Repository URL" value="https://github.com/SolanaRemix/node">
-            <select id="lang">
-                <option value="Node.js">Node.js (TypeScript)</option>
-                <option value="Rust">Rust (Cargo)</option>
-                <option value="Python">Python (Pip)</option>
-                <option value="Go">Go Lang</option>
-            </select>
-            <button onclick="triggerRepair()" style="margin-top: 1rem;">⚡ Execute Swarm Patch</button>
+        <div class="glass">
+            <h3>⌨️ Live Agent Terminal</h3>
+            <div class="terminal" id="terminal">
+                <div class="t-info">[boot] Atomic Gods AI swarm agent initialised</div>
+                <div class="t-info">[init] Elite AI surgeon ready</div>
+                <div class="t-success">[ok] All systems operational</div>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <button onclick="clearTerminal()">Clear Terminal</button>
+                <button onclick="loadRecords()">Refresh Records</button>
+            </div>
         </div>
     </div>
 
+    <div class="glass">
+        <h3>📜 Recent Surgeries</h3>
+        <div style="max-height: 200px; overflow-y: auto;">
+            <table style="width:100%; border-collapse: collapse;" id="historyTable">
+                <thead><tr style="border-bottom: 1px solid #333;"><th>Repository</th><th>Branch</th><th>Status</th><th>PR</th><th>Time</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="5" style="text-align:center;">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="glass" style="text-align:center; font-size:11px;">
+        Atomic Gods v1.6.0 · 🤖 AI-Powered · ⚡ Real-time · 🔗 Enterprise Ready
+    </div>
+
     <script>
-        const socket = io();
-        const wsStatus = document.getElementById('ws-status');
-        
-        socket.on('connect', () => { wsStatus.textContent = 'Live Connection'; wsStatus.style.background = 'var(--success)'; });
-        socket.on('disconnect', () => { wsStatus.textContent = 'Disconnected'; wsStatus.style.background = 'var(--danger)'; });
-        
-        socket.on('oracle-stats', (data) => {
-            document.getElementById('pattern-count').textContent = data.patternCount || 0;
-            document.getElementById('languages').textContent = data.languages?.join(', ') || 'None';
-            document.getElementById('suggestion').textContent = data.topSuggestion || 'Awaiting Metrics';
-        });
+        const API = 'http://localhost:3001';
+        let socket = null;
 
-        socket.on('repair-update', (data) => {
-            alert(`✅ Surgery Complete:\nRepo: ${data.repo}\nStatus: ${data.status}`);
-        });
-
-        function triggerRepair() {
-            socket.emit('request-surgery', {
-                repo: document.getElementById('repo').value,
-                language: document.getElementById('lang').value
-            });
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+            log('Terminal cleared', 'info');
         }
 
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const target = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', target);
-            localStorage.setItem('theme', target);
+        function log(msg, type = 'info') {
+            const t = document.getElementById('terminal');
+            const line = document.createElement('div');
+            if (type === 'success') line.className = 't-success';
+            else if (type === 'error') line.className = 't-error';
+            else if (type === 'warn') line.className = 't-warn';
+            else line.className = 't-info';
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            t.appendChild(line);
+            t.scrollTop = t.scrollHeight;
         }
 
-        function exportLogs() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ export: "Success", timestamp: Date.now() }));
-            const anchor = document.createElement('a');
-            anchor.setAttribute("href", dataStr);
-            anchor.setAttribute("download", "atomic-logs.json");
-            anchor.click();
+        async function loadRecords() {
+            try {
+                const res = await fetch(`${API}/api/surgery/records`);
+                const records = await res.json();
+                const tbody = document.getElementById('historyBody');
+                
+                document.getElementById('statTotal').innerText = records.length;
+                const successful = records.filter(r => r.status === 'successful').length;
+                document.getElementById('statSuccess').innerText = successful;
+                const prs = records.filter(r => r.prNumber).length;
+                document.getElementById('statPRs').innerText = prs;
+                const active = records.filter(r => r.status === 'running').length;
+                document.getElementById('statActive').innerText = active;
+                
+                if (records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No records yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = records.slice(0, 10).map(r => `
+                    <tr style="border-bottom:1px solid #222;">
+                        <td>${r.repoName || 'Unknown'}</td>
+                        <td>${r.branchName || 'main'}</td>
+                        <td style="color: ${r.status === 'successful' ? '#10b981' : '#f97316'}">${r.status}</td>
+                        <td>${r.prNumber ? `#${r.prNumber}` : '—'}</td>
+                        <td>${new Date(r.startTime).toLocaleTimeString()}</td>
+                    </tr>
+                `).join('');
+                log(`Loaded ${records.length} records`, 'success');
+            } catch(e) {
+                log(`API error: ${e.message}`, 'error');
+            }
         }
 
-        // Init theme
-        if (localStorage.getItem('theme')) document.documentElement.setAttribute('data-theme', localStorage.getItem('theme'));
-        
-        // Keyboard Shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') triggerRepair();
-        });
+        async function startFullSurgery() {
+            const repoUrl = document.getElementById('repoUrl').value.trim();
+            const branchName = document.getElementById('branchName').value.trim();
+            const keep = document.getElementById('keepFolder').checked;
+            const prBody = document.getElementById('prMsg').value;
+            
+            if (!repoUrl || !branchName) {
+                log('Repository URL and branch name required', 'error');
+                return;
+            }
+            
+            log(`🏥 Starting surgery on ${repoUrl}`, 'info');
+            document.getElementById('surgeryStatus').innerHTML = '🟡 Starting...';
+            document.getElementById('surgeryStatus').className = 'status';
+            
+            try {
+                // 1. Start session
+                log('Creating surgery session...', 'info');
+                const startRes = await fetch(`${API}/api/surgery/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repoUrl, branchName, keepAfterRepair: keep })
+                });
+                const startData = await startRes.json();
+                if (!startData.success) throw new Error('Failed to start session');
+                const sessionId = startData.sessionId;
+                log(`Session ${sessionId} created`, 'success');
+                document.getElementById('surgeryStatus').innerHTML = '🟡 Cloning...';
+                
+                // 2. Clone
+                log('Cloning repository...', 'info');
+                const cloneRes = await fetch(`${API}/api/surgery/clone`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, repoUrl, branchName })
+                });
+                const cloneData = await cloneRes.json();
+                if (!cloneData.success) throw new Error(`Clone failed: ${cloneData.error}`);
+                log('Repository cloned', 'success');
+                document.getElementById('surgeryStatus').innerHTML = '🟡 Installing...';
+                
+                // 3. Install
+                log('Installing dependencies...', 'info');
+                const installRes = await fetch(`${API}/api/surgery/step`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, step: 'install', command: 'npm install' })
+                });
+                log('Dependencies installed', 'success');
+                document.getElementById('surgeryStatus').innerHTML = '🟡 Auto-fixing...';
+                
+                // 4. Auto-fix
+                log('Running AI auto-fix...', 'info');
+                const fixRes = await fetch(`${API}/api/surgery/autofix`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+                const fixData = await fixRes.json();
+                if (fixData.success && fixData.fixes?.length) {
+                    fixData.fixes.forEach(f => log(`✓ ${f}`, 'success'));
+                }
+                log(`Auto-fix complete: ${fixData.fixes?.length || 0} fixes`, fixData.success ? 'success' : 'warn');
+                document.getElementById('surgeryStatus').innerHTML = '🟡 Committing...';
+                
+                // 5. Commit
+                log('Committing changes...', 'info');
+                const commitRes = await fetch(`${API}/api/surgery/commit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, commitMessage: '🏥 Atomic Gods AI Surgery' })
+                });
+                const commitData = await commitRes.json();
+                
+                if (commitData.noChanges) {
+                    log('No changes needed - repository already healthy', 'info');
+                    document.getElementById('surgeryStatus').innerHTML = '✅ No changes needed';
+                    document.getElementById('surgeryStatus').className = 'status status-success';
+                    await loadRecords();
+                    return;
+                }
+                if (!commitData.success) throw new Error(`Commit failed: ${commitData.error}`);
+                log('Changes committed and pushed', 'success');
+                document.getElementById('surgeryStatus').innerHTML = '🟡 Creating PR...';
+                
+                // 6. Create PR
+                log('Creating pull request...', 'info');
+                const prRes = await fetch(`${API}/api/surgery/create-pr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        sessionId, 
+                        prTitle: '🏥 Atomic Gods AI Surgery', 
+                        prBody: prBody,
+                        baseBranch: 'main'
+                    })
+                });
+                const prData = await prRes.json();
+                
+                if (prData.success) {
+                    log(`✅ PR #${prData.prNumber} created: ${prData.prUrl}`, 'success');
+                    document.getElementById('surgeryStatus').innerHTML = `✅ PR #${prData.prNumber} created!`;
+                    document.getElementById('surgeryStatus').className = 'status status-success';
+                } else {
+                    log(`PR creation failed: ${prData.error}`, 'error');
+                    document.getElementById('surgeryStatus').innerHTML = `❌ ${prData.error}`;
+                    document.getElementById('surgeryStatus').className = 'status status-error';
+                }
+                
+                await loadRecords();
+                
+            } catch (error) {
+                log(`Surgery failed: ${error.message}`, 'error');
+                document.getElementById('surgeryStatus').innerHTML = `❌ ${error.message}`;
+                document.getElementById('surgeryStatus').className = 'status status-error';
+            }
+        }
+
+        function initWebSocket() {
+            try {
+                socket = io(API, { transports: ['websocket'], reconnection: true });
+                socket.on('connect', () => log('WebSocket connected', 'success'));
+                socket.on('disconnect', () => log('WebSocket disconnected', 'warn'));
+                socket.on('repair-update', (data) => log(`Step: ${data.step} - ${data.status}`, data.status === 'completed' ? 'success' : 'info'));
+                socket.on('repair-complete', (data) => log(`Repair complete: ${data.status}`, data.status === 'successful' ? 'success' : 'error'));
+            } catch(e) {
+                log('WebSocket not available (server may not support it)', 'warn');
+            }
+        }
+
+        loadRecords();
+        initWebSocket();
+        setInterval(loadRecords, 30000);
     </script>
 </body>
 </html>
