@@ -1,652 +1,103 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Atomic Gods — Surgery Room</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
-  :root {
-    --bg:       #0d0d1a;
-    --bg2:      #13132a;
-    --bg3:      #1a1a33;
-    --border:   rgba(255,255,255,.07);
-    --border2:  rgba(255,255,255,.13);
-    --text:     #e8e8f4;
-    --muted:    #7b7b9a;
-    --purple:   #7f77dd;
-    --purple-d: #534ab7;
-    --purple-l: #eeedfe;
-    --teal:     #1d9e75;
-    --teal-l:   #e1f5ee;
-    --coral:    #d85a30;
-    --blue:     #378add;
-    --blue-l:   #e6f1fb;
-    --amber:    #ba7517;
-    --amber-l:  #faeeda;
-    --radius:   8px;
-    --radius-lg:12px;
-  }
- 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
-    line-height: 1.5;
-  }
- 
-  /* ── Layout ─────────────────────────────────── */
-  .dash     { max-width: 1400px; margin: 0 auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 20px; }
-  .row-2    { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .row-3    { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-  .row-4    { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
-  @media (max-width: 900px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
- 
-  /* ── Topbar ─────────────────────────────────── */
-  .topbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
-  .brand  { display: flex; align-items: center; gap: 12px; }
-  .brand-icon { width: 40px; height: 40px; border-radius: var(--radius); background: var(--purple-d); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-  .brand-name { font-size: 16px; font-weight: 600; color: var(--text); }
-  .brand-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .topbar-right { display: flex; align-items: center; gap: 10px; }
- 
-  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 30px; font-size: 11px; font-weight: 500; border: 1px solid; }
-  .pill-green { background: rgba(29,158,117,.12); border-color: rgba(29,158,117,.3); color: #4ecf9e; }
-  .pill-blue  { background: rgba(55,138,221,.12); border-color: rgba(55,138,221,.3); color: #6eb6f4; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; }
-  .dot-green { background: var(--teal); animation: pulse 1.5s infinite; }
-  .dot-blue  { background: var(--blue); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
- 
-  /* ── Buttons ─────────────────────────────────── */
-  .btn { padding: 7px 16px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-ghost  { background: transparent; border-color: var(--border2); color: var(--muted); }
-  .btn-ghost:hover { border-color: var(--purple); color: var(--text); }
-  .btn-primary { background: var(--purple-d); border-color: var(--purple-d); color: #fff; }
-  .btn-primary:hover { background: #3c3489; }
-  .btn-sm { padding: 4px 10px; font-size: 11px; }
- 
-  /* ── Stat cards ──────────────────────────────── */
-  .scard { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
-  .scard-label { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
-  .scard-val   { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1.1; }
-  .scard-trend { font-size: 11px; }
-  .trend-up   { color: #4ecf9e; }
-  .trend-down { color: #f07050; }
-  .trend-flat { color: var(--muted); }
- 
-  /* ── Panels ──────────────────────────────────── */
-  .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; }
-  .panel-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .panel-title { font-size: 13px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 7px; }
-  .panel-title .icon { font-size: 15px; color: var(--muted); }
-  .panel-body { padding: 16px; flex: 1; }
- 
-  .badge { display: inline-block; padding: 2px 9px; border-radius: 30px; font-size: 10px; font-weight: 500; }
-  .badge-purple { background: rgba(127,119,221,.15); color: var(--purple); border: 1px solid rgba(127,119,221,.25); }
-  .badge-green  { background: rgba(29,158,117,.12);  color: #4ecf9e;       border: 1px solid rgba(29,158,117,.25); }
-  .badge-blue   { background: rgba(55,138,221,.12);  color: #6eb6f4;       border: 1px solid rgba(55,138,221,.25); }
-  .badge-amber  { background: rgba(186,117,23,.12);  color: #f4a84a;       border: 1px solid rgba(186,117,23,.25); }
-  .badge-red    { background: rgba(216,90,48,.12);   color: #f07050;       border: 1px solid rgba(216,90,48,.25); }
- 
-  /* ── Repair list ─────────────────────────────── */
-  .repair-list { display: flex; flex-direction: column; gap: 8px; }
-  .repair-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg3); border: 1px solid var(--border); }
-  .r-icon { width: 32px; height: 32px; border-radius: var(--radius); background: rgba(127,119,221,.15); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-  .r-info  { flex: 1; min-width: 0; }
-  .r-name  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
-  .r-meta  { font-size: 11px; color: var(--muted); }
-  .prog-bar { width: 64px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; flex-shrink: 0; }
-  .prog-fill { height: 100%; border-radius: 2px; background: var(--purple); }
-  .r-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .r-status.running { background: var(--blue); animation: pulse 1s infinite; }
-  .r-status.pending { background: var(--amber); }
-  .r-status.success { background: var(--teal); }
-  .r-status.failed  { background: var(--coral); }
- 
-  /* ── Surgery form ────────────────────────────── */
-  .surgery-form { display: flex; flex-direction: column; gap: 10px; }
-  .surgery-form input,
-  .surgery-form textarea {
-    background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius);
-    color: var(--text); padding: 9px 12px; font-size: 12px; font-family: inherit; width: 100%; resize: none;
-    transition: border-color .15s;
-  }
-  .surgery-form input:focus,
-  .surgery-form textarea:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 2px rgba(127,119,221,.15); }
-  .surgery-form input::placeholder,
-  .surgery-form textarea::placeholder { color: var(--muted); }
-  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); cursor: pointer; }
-  .checkbox-row input[type=checkbox] { accent-color: var(--purple); }
- 
-  /* ── History table ───────────────────────────── */
-  .htable { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-  .htable th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--border); }
-  .htable td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .htable tr:last-child td { border-bottom: none; }
-  .htable tr:hover td { background: rgba(255,255,255,.03); }
-  .st-success { color: #4ecf9e; }
-  .st-failed  { color: #f07050; }
-  .st-running { color: #6eb6f4; }
-  .st-pending { color: #f4a84a; }
- 
-  /* ── Agents ──────────────────────────────────── */
-  .agent-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
-  .agent-row:last-child { border-bottom: none; }
-  .agent-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-  .agent-name { font-size: 13px; font-weight: 500; color: var(--text); }
-  .agent-meta { font-size: 11px; color: var(--muted); }
-  .agent-stats { margin-left: auto; text-align: right; flex-shrink: 0; }
-  .agent-count { font-size: 14px; font-weight: 600; color: var(--text); }
-  .agent-rate  { font-size: 11px; color: #4ecf9e; }
- 
-  /* ── Terminal ────────────────────────────────── */
-  .terminal { background: #090912; border-radius: var(--radius); padding: 14px; font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace; font-size: 11px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-  .terminal::-webkit-scrollbar { width: 4px; }
-  .terminal::-webkit-scrollbar-track { background: transparent; }
-  .terminal::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-  .t-line     { color: var(--muted); }
-  .t-line.ok  { color: #4ecf9e; }
-  .t-line.err { color: #f07050; }
-  .t-line.inf { color: #6eb6f4; }
-  .t-line.warn{ color: #f4a84a; }
- 
-  /* ── Charts ──────────────────────────────────── */
-  .chart-wrap { position: relative; height: 180px; }
- 
-  /* ── Footer ──────────────────────────────────── */
-  .footer { text-align: center; font-size: 11px; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--border); }
- 
-  /* ── Scrollbar global ────────────────────────── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg2); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomic Gods | Cyber Surgery</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root { --bg: #0d0d1a; --surface: #13132a; --text: #e8e8f4; --accent: #7f77dd; --success: #1d9e75; --danger: #d85a30; }
+        [data-theme="light"] { --bg: #f4f4f9; --surface: #ffffff; --text: #1a1a2e; --accent: #534ab7; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; padding: 2rem; transition: background 0.3s; margin: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .panel { background: var(--surface); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(127,119,221,0.2); }
+        .badge { background: var(--success); color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        input, select, button { width: 100%; padding: 0.8rem; margin-top: 0.5rem; border-radius: 4px; border: 1px solid rgba(127,119,221,0.3); background: var(--bg); color: var(--text); }
+        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; border: none; }
+        button:hover { opacity: 0.9; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    </style>
 </head>
 <body>
-<div class="dash">
- 
-  <!-- ── Topbar ──────────────────────────────────────────── -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-icon">🏥</div>
-      <div>
-        <div class="brand-name">Atomic Gods — Surgery Room</div>
-        <div class="brand-sub">Autonomous AI repair engine · v1.4.0</div>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <span class="pill pill-green"><span class="dot dot-green"></span>AI swarm active</span>
-      <span class="pill pill-blue" id="apiStatus"><span class="dot dot-blue"></span>Connecting…</span>
-      <button class="btn btn-ghost" onclick="syncAll()">↻ Sync</button>
-    </div>
-  </div>
- 
-  <!-- ── Stats row ───────────────────────────────────────── -->
-  <div class="row-4" id="statsRow"></div>
- 
-  <!-- ── Charts row ──────────────────────────────────────── -->
-  <div class="row-2">
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title"><span class="icon">📈</span>Repairs — last 30 days</span>
-        <span class="badge badge-green">+14%</span>
-      </div>
-      <div class="panel-body"><div class="chart-wrap"><canvas id="timeChart"></canvas></div></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title"><span class="icon">🎯</span>Outcome breakdown</span>
-        <span class="badge badge-blue" id="outcomeBadge">Live</span>
-      </div>
-      <div class="panel-body"><div class="chart-wrap"><canvas id="donutChart"></canvas></div></div>
-    </div>
-  </div>
- 
-  <!-- ── Active repairs + Intake form ────────────────────── -->
-  <div class="row-2">
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title"><span class="icon">⚡</span>Active repairs</span>
-        <span class="badge badge-amber" id="activeBadge">0 active</span>
-      </div>
-      <div class="panel-body">
-        <div class="repair-list" id="activeList">
-          <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:12px">No active repairs</div>
+    <header>
+        <div>
+            <h1 style="margin: 0; color: var(--accent);">🏥 ATOMIC GODS | CYBER SURGERY</h1>
+            <p>System Version: <span class="badge">v1.6.0 Enterprise</span></p>
         </div>
-      </div>
-    </div>
- 
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title"><span class="icon">🔬</span>New surgery intake</span>
-        <span class="badge badge-green">Surgeon ready</span>
-      </div>
-      <div class="panel-body">
-        <div class="surgery-form">
-          <input type="text"     id="repoUrl"    placeholder="GitHub repository URL" value="https://github.com/SolanaRemix/node.git">
-          <input type="text"     id="branchName" placeholder="Branch name"           value="surgery/ai-repair">
-          <textarea id="prMsg"   rows="3"        placeholder="PR description">🏥 Atomic Gods AI Surgery — autonomous repair applied.
- 
-Fixes: TypeScript config, missing scripts, dependency install.</textarea>
-          <label class="checkbox-row"><input type="checkbox" id="keepFolder"> Keep surgery folder after repair</label>
-          <button class="btn btn-primary" onclick="startFullSurgery()">▶ Start AI surgery</button>
-          <div id="surgeryStatus" style="font-size:11px;color:var(--muted);min-height:16px"></div>
+        <div>
+            <button onclick="toggleTheme()" style="width: auto;">🌗 Theme</button>
+            <span id="ws-status" class="badge" style="background: var(--danger); margin-left: 1rem;">Offline</span>
         </div>
-      </div>
+    </header>
+
+    <div class="grid">
+        <div class="panel">
+            <h2>🧠 Oracle Intelligence</h2>
+            <p>Patterns Learned: <strong id="pattern-count">0</strong></p>
+            <p>Active Across: <span id="languages">-</span></p>
+            <p>Heuristic Suggestion: <em id="suggestion" style="color: var(--success);">Scanning...</em></p>
+            <button onclick="exportLogs()" style="margin-top: 1rem;">📥 Export Repair JSON</button>
+        </div>
+
+        <div class="panel">
+            <h2>🔬 Deploy Surgery</h2>
+            <input type="text" id="repo" placeholder="Repository URL" value="https://github.com/SolanaRemix/node">
+            <select id="lang">
+                <option value="Node.js">Node.js (TypeScript)</option>
+                <option value="Rust">Rust (Cargo)</option>
+                <option value="Python">Python (Pip)</option>
+                <option value="Go">Go Lang</option>
+            </select>
+            <button onclick="triggerRepair()" style="margin-top: 1rem;">⚡ Execute Swarm Patch</button>
+        </div>
     </div>
-  </div>
- 
-  <!-- ── History + Agents ─────────────────────────────────── -->
-  <div class="row-2">
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title"><span class="icon">📋</span>Recent repairs</span>
-        <span class="badge badge-purple" id="histBadge">0 records</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="htable">
-          <thead>
-            <tr>
-              <th style="width:34%">Repository</th>
-              <th style="width:20%">Branch</th>
-              <th style="width:18%">Status</th>
-              <th style="width:14%">Duration</th>
-              <th style="width:14%">PR</th>
-            </tr>
-          </thead>
-          <tbody id="histBody">
-            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">No history yet</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
- 
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title"><span class="icon">🤖</span>Connected agents</span>
-        <span class="badge badge-purple" id="agentBadge">0 agents</span>
-      </div>
-      <div id="agentList"></div>
-    </div>
-  </div>
- 
-  <!-- ── Terminal ─────────────────────────────────────────── -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title"><span class="icon">⌨️</span>Live agent terminal</span>
-      <div style="display:flex;gap:6px">
-        <span class="badge badge-green">Real-time</span>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('terminal').innerHTML=''">Clear</button>
-      </div>
-    </div>
-    <div class="panel-body">
-      <div class="terminal" id="terminal">
-        <div class="t-line inf">[boot] Atomic Gods AI swarm agent initialised</div>
-        <div class="t-line inf">[init] Elite AI surgeon ready</div>
-        <div class="t-line ok" >[ok]   All systems operational</div>
-      </div>
-    </div>
-  </div>
- 
-  <!-- ── Footer ───────────────────────────────────────────── -->
-  <div class="footer">
-    Atomic Gods v1.4.0 &nbsp;·&nbsp; AI-powered swarm agent &nbsp;·&nbsp;
-    Last sync: <span id="lastSync">just now</span>
-  </div>
-</div>
- 
-<script>
-// ─────────────────────────────────────────────────────────────────────────────
-// Config
-// ─────────────────────────────────────────────────────────────────────────────
-const API = 'http://localhost:3001';
-let charts = {};
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// State — seeded with demo data; overwritten by live API on load
-// ─────────────────────────────────────────────────────────────────────────────
-const state = {
-  total:   187,
-  success: 163,
-  ai:       89,
-  avgTime:  12.5,
-  repairsOverTime: [54,28,31,45,62,38,71,54,28,31,45,62,58,71,83,72,65,78,82,74,69,55,48,62,71,83,91,88,79,85],
-  active: [
-    { name:'SolanaRemix/node',   branch:'surgery/ai-repair', status:'running', prog:62 },
-    { name:'web3-dashboard',     branch:'fix/ts-errors',     status:'pending', prog:25 },
-  ],
-  history: [],
-  agents: [
-    { name:'EliteBot',       type:'AI Agent', repairs:54, rate:94, bg:'#2a1e4a', fg:'#b89ef7', initials:'EB' },
-    { name:'SwarmAgent',     type:'AI Agent', repairs:38, rate:89, bg:'#0e2e22', fg:'#4ecf9e', initials:'SA' },
-    { name:'SolanaRemix',    type:'Human',    repairs:21, rate:100,bg:'#0e1f35', fg:'#6eb6f4', initials:'SR' },
-    { name:'GitHub Actions', type:'CI Bot',   repairs:74, rate:81, bg:'#2e1f0a', fg:'#f4a84a', initials:'GA' },
-  ]
-};
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Terminal
-// ─────────────────────────────────────────────────────────────────────────────
-function log(msg, type = '') {
-  const t = document.getElementById('terminal');
-  const d = document.createElement('div');
-  d.className = 't-line' + (type ? ' ' + type : '');
-  d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  t.appendChild(d);
-  t.scrollTop = t.scrollHeight;
-  if (t.children.length > 120) t.removeChild(t.firstChild);
-}
- 
-function setSurgeryStatus(msg) {
-  document.getElementById('surgeryStatus').textContent = msg;
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stats
-// ─────────────────────────────────────────────────────────────────────────────
-function renderStats() {
-  const rate = Math.round(state.success / state.total * 100);
-  const items = [
-    { icon:'🔧', label:'Total repairs',  val: state.total,         trend:'↑ +14%', cls:'trend-up'   },
-    { icon:'✅', label:'Success rate',   val: rate + '%',          trend:'↑ +3%',  cls:'trend-up'   },
-    { icon:'🤖', label:'AI actions',     val: state.ai,            trend:'Last hour',cls:'trend-flat'},
-    { icon:'⏱', label:'Avg repair',     val: state.avgTime + 's', trend:'↓ –2s',  cls:'trend-down' },
-  ];
-  document.getElementById('statsRow').innerHTML = items.map(s => `
-    <div class="scard">
-      <div class="scard-label">${s.icon} ${s.label}</div>
-      <div class="scard-val">${s.val}</div>
-      <div class="scard-trend ${s.cls}">${s.trend}</div>
-    </div>`).join('');
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Active repairs
-// ─────────────────────────────────────────────────────────────────────────────
-function renderActive() {
-  const el = document.getElementById('activeList');
-  document.getElementById('activeBadge').textContent = state.active.length + ' active';
-  if (!state.active.length) {
-    el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:12px">No active repairs</div>';
-    return;
-  }
-  el.innerHTML = state.active.map(r => `
-    <div class="repair-item">
-      <div class="r-icon">🔀</div>
-      <div class="r-info">
-        <div class="r-name">${r.name}</div>
-        <div class="r-meta">${r.branch}</div>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${r.prog}%"></div></div>
-      <div class="r-status ${r.status}"></div>
-    </div>`).join('');
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// History table
-// ─────────────────────────────────────────────────────────────────────────────
-function renderHistory() {
-  document.getElementById('histBadge').textContent = state.history.length + ' records';
-  const body = document.getElementById('histBody');
-  if (!state.history.length) {
-    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">No history yet</td></tr>';
-    return;
-  }
-  const stCls = { success:'st-success', successful:'st-success', failed:'st-failed', running:'st-running', pending:'st-pending' };
-  body.innerHTML = state.history.slice(0, 15).map(r => `
-    <tr>
-      <td title="${r.repo}">${r.repo}</td>
-      <td title="${r.branch||''}">${r.branch || '—'}</td>
-      <td class="${stCls[r.status]||''}">${r.status}</td>
-      <td>${r.duration ? r.duration + 's' : '—'}</td>
-      <td>${r.pr ? `<span class="badge badge-blue">#${r.pr}</span>` : '—'}</td>
-    </tr>`).join('');
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Agents
-// ─────────────────────────────────────────────────────────────────────────────
-function renderAgents() {
-  const ai = state.agents.filter(a => a.type === 'AI Agent').length;
-  document.getElementById('agentBadge').textContent = ai + ' agents';
-  document.getElementById('agentList').innerHTML = state.agents.map(a => `
-    <div class="agent-row">
-      <div class="agent-av" style="background:${a.bg};color:${a.fg}">${a.initials}</div>
-      <div>
-        <div class="agent-name">${a.name} ${a.type !== 'Human' ? `<span class="badge badge-purple" style="font-size:9px">${a.type}</span>` : ''}</div>
-        <div class="agent-meta">${a.type}</div>
-      </div>
-      <div class="agent-stats">
-        <div class="agent-count">${a.repairs}</div>
-        <div class="agent-rate">${a.rate}% success</div>
-      </div>
-    </div>`).join('');
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Charts
-// ─────────────────────────────────────────────────────────────────────────────
-function renderCharts() {
-  if (charts.time)  { charts.time.destroy(); }
-  if (charts.donut) { charts.donut.destroy(); }
- 
-  const gridColor  = 'rgba(255,255,255,.06)';
-  const tickColor  = '#7b7b9a';
- 
-  charts.time = new Chart(document.getElementById('timeChart'), {
-    type: 'line',
-    data: {
-      labels: state.repairsOverTime.map((_, i) => i === 0 ? '30d' : i === 14 ? '15d' : i === 29 ? 'Today' : ''),
-      datasets: [{
-        label: 'Repairs',
-        data: state.repairsOverTime,
-        borderColor: '#7f77dd',
-        backgroundColor: 'rgba(127,119,221,.08)',
-        fill: true,
-        tension: .4,
-        pointRadius: 0,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-      scales: {
-        x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
-      }
-    }
-  });
- 
-  const failed = state.total - state.success;
-  charts.donut = new Chart(document.getElementById('donutChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Success', 'Failed'],
-      datasets: [{ data: [state.success, failed], backgroundColor: ['#1d9e75', '#d85a30'], borderWidth: 0, hoverOffset: 4 }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '72%',
-      plugins: { legend: { position: 'bottom', labels: { color: tickColor, font: { size: 11 }, padding: 14, boxWidth: 10 } } }
-    }
-  });
- 
-  // Update outcome badge
-  const rate = Math.round(state.success / state.total * 100);
-  document.getElementById('outcomeBadge').textContent = rate + '% success';
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// API — load surgery records from server.js
-// ─────────────────────────────────────────────────────────────────────────────
-async function loadRecords() {
-  try {
-    const r    = await fetch(`${API}/api/surgery/records`, { signal: AbortSignal.timeout(4000) });
-    const recs = await r.json();
-    document.getElementById('apiStatus').innerHTML = '<span class="dot dot-green" style="animation:none"></span>API connected';
-    document.getElementById('apiStatus').className = 'pill pill-green';
- 
-    if (recs.length) {
-      state.history = recs.map(r => ({
-        repo:     r.repoName,
-        branch:   r.branchName,
-        status:   r.status,
-        duration: null,
-        pr:       r.prNumber,
-      }));
-      const successes = recs.filter(r => r.status === 'success' || r.status === 'successful').length;
-      state.total   = Math.max(state.total, recs.length + 180);
-      state.success = Math.max(state.success, successes + 160);
-      log(`Loaded ${recs.length} surgery records from API`, 'ok');
-    }
-  } catch (e) {
-    document.getElementById('apiStatus').innerHTML = '<span class="dot" style="background:#f07050"></span>API offline';
-    document.getElementById('apiStatus').className = 'pill';
-    document.getElementById('apiStatus').style.cssText = 'background:rgba(216,90,48,.12);border-color:rgba(216,90,48,.3);color:#f07050';
-    log('Surgery API not reachable (is server.js running on :3001?)', 'warn');
-  }
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Full surgery pipeline — matches server.js API exactly
-// ─────────────────────────────────────────────────────────────────────────────
-async function startFullSurgery() {
-  const repoUrl       = document.getElementById('repoUrl').value.trim();
-  const branchName    = document.getElementById('branchName').value.trim();
-  const keepAfterRepair = document.getElementById('keepFolder').checked;
-  const prBody        = document.getElementById('prMsg').value.trim();
- 
-  if (!repoUrl || !branchName) { log('Repository URL and branch name are required', 'err'); return; }
- 
-  log(`Starting surgery on ${repoUrl}`, 'inf');
-  log(`Branch: ${branchName}`, 'inf');
-  setSurgeryStatus('Starting…');
- 
-  state.active.unshift({ name: repoUrl.split('/').slice(-1)[0].replace('.git',''), branch: branchName, status: 'running', prog: 5 });
-  renderActive();
- 
-  try {
-    // 1. Start session
-    const startRes  = await fetch(`${API}/api/surgery/start`, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ repoUrl, branchName, keepAfterRepair }) });
-    const { sessionId } = await startRes.json();
-    log(`Session ${sessionId} created`, 'ok');
-    state.active[0].prog = 10; renderActive();
-    setSurgeryStatus('Cloning repository…');
- 
-    // 2. Clone
-    const cloneRes  = await fetch(`${API}/api/surgery/clone`, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ sessionId, repoUrl, branchName }) });
-    const cloneData = await cloneRes.json();
-    if (!cloneData.success) throw new Error('Clone failed: ' + cloneData.error);
-    log('Repository cloned', 'ok');
-    state.active[0].prog = 25; renderActive();
-    setSurgeryStatus('Installing dependencies…');
- 
-    // 3. Install
-    await fetch(`${API}/api/surgery/step`, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ sessionId, step:'Install', command:'npm install' }) });
-    log('Dependencies installed', 'ok');
-    state.active[0].prog = 40; renderActive();
-    setSurgeryStatus('Running AI auto-fix…');
- 
-    // 4. Auto-fix (the real file-modifying engine)
-    const fixRes  = await fetch(`${API}/api/surgery/autofix`, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ sessionId }) });
-    const fixData = await fixRes.json();
-    if (fixData.success) {
-      (fixData.fixes || []).forEach(f => log(f, 'ok'));
-      (fixData.errors || []).forEach(e => log(e, 'warn'));
-      log(`Auto-fix complete — ${fixData.fixes?.length || 0} fixes, ${fixData.errors?.length || 0} warnings`, 'ok');
-    } else {
-      log('Auto-fix had errors: ' + fixData.error, 'err');
-    }
-    state.active[0].prog = 65; renderActive();
-    setSurgeryStatus('Committing changes…');
- 
-    // 5. Commit
-    const commitRes  = await fetch(`${API}/api/surgery/commit`, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ sessionId, commitMessage:'🏥 Atomic Gods AI Surgery — autonomous repair' }) });
-    const commitData = await commitRes.json();
- 
-    if (commitData.noChanges) {
-      log('No changes to commit — repository already healthy', 'warn');
-      state.active.shift(); renderActive();
-      setSurgeryStatus('✅ No changes needed');
-      state.ai += 1; renderStats();
-      return;
-    }
-    log('Changes committed and pushed', 'ok');
-    state.active[0].prog = 85; renderActive();
-    setSurgeryStatus('Creating pull request…');
- 
-    // 6. Create PR
-    const prRes  = await fetch(`${API}/api/surgery/create-pr`, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ sessionId, prTitle:'🏥 Atomic Gods AI Surgery', prBody, baseBranch:'main' }) });
-    const prData = await prRes.json();
- 
-    if (prData.success) {
-      log(`✅ PR #${prData.prNumber} created: ${prData.prUrl}`, 'ok');
-      state.history.unshift({ repo: repoUrl.split('/').slice(-1)[0].replace('.git',''), branch: branchName, status:'successful', duration:null, pr: prData.prNumber });
-      state.total++;
-      state.success++;
-    } else {
-      log('PR creation failed: ' + prData.error, 'err');
-    }
- 
-    state.active.shift();
-    renderActive(); renderHistory(); renderStats();
-    setSurgeryStatus(prData.success ? `✅ PR #${prData.prNumber} created` : '⚠️ PR creation failed');
-    state.ai += 5;
- 
-  } catch (err) {
-    log('Surgery failed: ' + err.message, 'err');
-    state.active[0].status = 'failed';
-    renderActive();
-    setSurgeryStatus('❌ ' + err.message);
-  }
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sync all
-// ─────────────────────────────────────────────────────────────────────────────
-async function syncAll() {
-  log('Syncing dashboard data…', 'inf');
-  await loadRecords();
-  renderStats(); renderActive(); renderHistory(); renderAgents(); renderCharts();
-  document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
-  log('Sync complete', 'ok');
-}
- 
-// ─────────────────────────────────────────────────────────────────────────────
-// Boot
-// ─────────────────────────────────────────────────────────────────────────────
-async function init() {
-  renderStats(); renderActive(); renderAgents(); renderHistory(); renderCharts();
-  await loadRecords();
-  renderStats(); renderHistory();
-  document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
- 
-  // Live AI action counter
-  setInterval(() => {
-    state.ai += Math.floor(Math.random() * 3) + 1;
-    renderStats();
-    document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
-  }, 30_000);
- 
-  // Poll API records every 60s
-  setInterval(async () => { await loadRecords(); renderHistory(); renderStats(); }, 60_000);
-}
- 
-init();
-</script>
+
+    <script>
+        const socket = io();
+        const wsStatus = document.getElementById('ws-status');
+        
+        socket.on('connect', () => { wsStatus.textContent = 'Live Connection'; wsStatus.style.background = 'var(--success)'; });
+        socket.on('disconnect', () => { wsStatus.textContent = 'Disconnected'; wsStatus.style.background = 'var(--danger)'; });
+        
+        socket.on('oracle-stats', (data) => {
+            document.getElementById('pattern-count').textContent = data.patternCount || 0;
+            document.getElementById('languages').textContent = data.languages?.join(', ') || 'None';
+            document.getElementById('suggestion').textContent = data.topSuggestion || 'Awaiting Metrics';
+        });
+
+        socket.on('repair-update', (data) => {
+            alert(`✅ Surgery Complete:\nRepo: ${data.repo}\nStatus: ${data.status}`);
+        });
+
+        function triggerRepair() {
+            socket.emit('request-surgery', {
+                repo: document.getElementById('repo').value,
+                language: document.getElementById('lang').value
+            });
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', target);
+            localStorage.setItem('theme', target);
+        }
+
+        function exportLogs() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ export: "Success", timestamp: Date.now() }));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", "atomic-logs.json");
+            anchor.click();
+        }
+
+        // Init theme
+        if (localStorage.getItem('theme')) document.documentElement.setAttribute('data-theme', localStorage.getItem('theme'));
+        
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') triggerRepair();
+        });
+    </script>
 </body>
 </html>

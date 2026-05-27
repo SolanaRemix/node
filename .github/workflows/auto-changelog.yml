@@ -1,0 +1,21 @@
+﻿name: "📝 Auto-Changelog"
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "Generate & Commit Changelog"
+        run: |
+          git config user.name "Atomic Swarm Gods"
+          git config user.email "swarm@atomic-gods.dev"
+          echo "# 📜 Auto-Generated Changelog" > CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" --since="7 days ago" >> CHANGELOG.md
+          git add CHANGELOG.md
+          git diff --cached --quiet || (git commit -m "docs: 📝 Auto-update changelog" && git push)

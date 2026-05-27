@@ -1,0 +1,33 @@
+﻿name: "🌐 Universal Auto-Repair - Any Language"
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, master]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  detect-and-repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "🔍 Auto-Detect & Repair Stack"
+        run: |
+          git config user.name "Atomic Swarm Gods"
+          git config user.email "swarm@atomic-gods.dev"
+          
+          if [ -f "Cargo.toml" ]; then
+            cargo build && cargo fmt && cargo clippy --fix
+          elif [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
+            pip install -r requirements.txt || true
+            black . && isort .
+          elif [ -f "go.mod" ]; then
+            go mod tidy && go fmt ./...
+          elif [ -f "package.json" ]; then
+            npm install && npm run format && npm run lint
+          fi
+          
+          git add -A
+          git diff --cached --quiet || (git commit -m "🤖 Auto-repair: Stack optimized" && git push)
