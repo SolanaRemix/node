@@ -1,43 +1,33 @@
-{
+﻿{
   "name": "@atomic-gods/core",
-  "version": "1.4.0",
-  "description": "⚡ Atomic Gods - Universal Autonomous Repair System",
+  "version": "1.6.0",
+  "description": "Atomic Swarm Gods - Enterprise Auto-Repair System",
   "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "god-mode": "npm run clean && npm install && npm run build && npm test",
-    "auto-heal": "node scripts/auto-heal.js",
+    "start": "node server.js",
+    "dev": "node --watch server.js",
     "build": "npx tsc",
-    "test": "node --test dist/**/*.test.js",
-    "typecheck": "tsc --noEmit --strict || true",
-    "clean": "rm -rf node_modules dist .next build package-lock.json pnpm-lock.yaml yarn.lock 2>/dev/null || true",
-    "audit": "npm audit --audit-level=moderate || true",
-    "fix-audit": "npm audit fix || true",
-    "start": "node dist/index.js",
-    "dev": "node --watch dist/index.js"
+    "test": "node --test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.js",
+    "format": "prettier --write .",
+    "clean": "rm -rf node_modules dist package-lock.json",
+    "pipeline": "pwsh -File pipeline.ps1"
   },
-  "bin": {
-    "atomic-gods": "./dist/cli.js"
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.0",
+    "socket.io": "^4.7.0"
   },
-  "files": [
-    "dist/**/*",
-    "scripts/**/*"
-  ],
-  "keywords": [
-    "auto-repair",
-    "self-healing",
-    "ci-cd",
-    "autonomous",
-    "ai-agent"
-  ],
   "devDependencies": {
-    "@types/node": "^22.19.19",
+    "@types/express": "^4.17.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
     "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "cors": "^2.8.6",
-    "express": "^5.2.1"
   }
 }

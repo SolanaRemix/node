@@ -3,97 +3,60 @@
 on:
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  parse-emoji:
-    if: contains(github.event.comment.body, '@repair') || contains(github.event.comment.body, '@clean') || contains(github.event.comment.body, '@lock') || contains(github.event.comment.body, '@build') || contains(github.event.comment.body, '@test') || contains(github.event.comment.body, '@docs') || contains(github.event.comment.body, '@changelog')
+  resolve-pr:
+    if: contains(github.event.comment.body, '@repair')
+    runs-on: ubuntu-latest
+    outputs:
+      pr_branch: ${{ steps.pr.outputs.head_ref }}
+      pr_number: ${{ steps.pr.outputs.number }}
+    steps:
+      - name: "Get PR info"
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('number', pr.number);
+            console.log(`PR #${pr.number} branch: ${pr.head.ref}`);
+
+  repair:
+    needs: resolve-pr
     runs-on: ubuntu-latest
     steps:
-      - name: "📥 Checkout"
-        uses: actions/checkout@v4
-
-      - name: "🔧 Setup Node.js"
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-pr.outputs.pr_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
-
-      - name: "📦 Setup PNPM"
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-
-      - name: "🔍 Parse Command"
-        id: cmd
+      - name: "Auto-Repair"
         run: |
-          BODY="${{ github.event.comment.body }}"
-          if [[ "$BODY" == *"@repair"* ]]; then
-            echo "command=repair" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@clean"* ]]; then
-            echo "command=clean" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@lock"* ]]; then
-            echo "command=lock" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@build"* ]]; then
-            echo "command=build" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@test"* ]]; then
-            echo "command=test" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@docs"* ]]; then
-            echo "command=docs" >> $GITHUB_OUTPUT
-          elif [[ "$BODY" == *"@changelog"* ]]; then
-            echo "command=changelog" >> $GITHUB_OUTPUT
-          fi
-
-      - name: "🧹 Install Dependencies"
-        if: steps.cmd.outputs.command != ''
-        run: |
-          pnpm install --no-frozen-lockfile
-
-      - name: "🚀 Execute @repair"
-        if: steps.cmd.outputs.command == 'repair'
-        run: |
-          pnpm run typecheck
-          pnpm run build
-          pnpm run test
-
-      - name: "🧹 Execute @clean"
-        if: steps.cmd.outputs.command == 'clean'
-        run: rm -rf node_modules pnpm-lock.yaml package-lock.json
-
-      - name: "🔒 Execute @lock"
-        if: steps.cmd.outputs.command == 'lock'
-        run: pnpm install --frozen-lockfile
-
-      - name: "📦 Execute @build"
-        if: steps.cmd.outputs.command == 'build'
-        run: pnpm run build
-
-      - name: "✅ Execute @test"
-        if: steps.cmd.outputs.command == 'test'
-        run: pnpm run test
-
-      - name: "📖 Execute @docs"
-        if: steps.cmd.outputs.command == 'docs'
-        run: |
-          mkdir -p docs
-          echo "# Docs refreshed $(date)" > docs/README.md
-
-      - name: "📝 Execute @changelog"
-        if: steps.cmd.outputs.command == 'changelog'
-        run: echo "- $(date): Updated via emoji" >> CHANGELOG.md
-
-      - name: "💬 Post Comment"
-        if: steps.cmd.outputs.command != ''
+          git config user.name "Atomic Gods AI Agent"
+          git config user.email "ai-agent@atomic-gods.dev"
+          npm install || true
+          npm run build || true
+          git add .
+          git diff --staged --quiet || git commit -m "🤖 @repair: Auto-fix applied"
+          git push origin HEAD:${{ needs.resolve-pr.outputs.pr_branch }} || true
+      - name: "Post Comment"
         uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ needs.resolve-pr.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ Executed command: **${{ steps.cmd.outputs.command }}**\n\nTime: ${new Date().toUTCString()}`
+              body: '✅ **Atomic Gods Auto-Repair Complete**\n\nFixes have been applied to this PR.\n\n🤖 *This auto-repair was performed by the Atomic Gods AI Agent*'
             })

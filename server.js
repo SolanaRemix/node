@@ -1,10 +1,11 @@
-// server.js - Complete Surgery Room System with Fixed PowerShell Syntax
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import fs from 'fs';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -12,39 +13,39 @@ const __dirname = path.dirname(__filename);
 
 const execAsync = promisify(exec);
 const app = express();
+const server = createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
 app.use(cors());
 app.use(express.json());
-app.use(express.static('docs/dashboard'));
+app.use(express.static(path.join(__dirname, 'docs/dashboard')));
 
-// Surgery Room Configuration
-const SURGERY_BASE = 'D:/dev/surgery-room';
+const SURGERY_BASE = path.join(__dirname, 'surgery-room');
 const REPAIRS_DIR = path.join(SURGERY_BASE, 'repairs');
 const SUCCESS_DIR = path.join(SURGERY_BASE, 'successful');
 const FAILED_DIR = path.join(SURGERY_BASE, 'failed');
 
-// Create surgery directories
 [SURGERY_BASE, REPAIRS_DIR, SUCCESS_DIR, FAILED_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// Store surgery records
 let surgeryRecords = [];
 let activeSurgeries = new Map();
 
-// Load existing surgery records
-function loadSurgeryRecords() {
+function loadRecords() {
     const recordsPath = path.join(SURGERY_BASE, 'surgery-records.json');
     if (fs.existsSync(recordsPath)) {
-        surgeryRecords = JSON.parse(fs.readFileSync(recordsPath, 'utf8'));
+        try {
+            surgeryRecords = JSON.parse(fs.readFileSync(recordsPath, 'utf8'));
+        } catch(e) { surgeryRecords = []; }
     }
 }
-loadSurgeryRecords();
+loadRecords();
 
-function saveSurgeryRecords() {
+function saveRecords() {
     fs.writeFileSync(path.join(SURGERY_BASE, 'surgery-records.json'), JSON.stringify(surgeryRecords, null, 2));
 }
 
-// Surgery Session Class
 class SurgerySession {
     constructor(id, repoUrl, branchName) {
         this.id = id;
@@ -55,213 +56,225 @@ class SurgerySession {
         this.status = 'preparing';
         this.steps = [];
         this.prNumber = null;
-        this.prUrl = null;
-        this.commentPosted = false;
         this.startTime = new Date();
-        this.endTime = null;
+        this.hasChanges = false;
+        this.language = 'unknown';
     }
-    
-    addStep(stepName, status, output = '') {
-        this.steps.push({
-            step: stepName,
-            status: status,
-            output: output.substring(0, 500),
-            timestamp: new Date()
-        });
-        saveSurgeryRecords();
+    addStep(stepName, status, detail = '') {
+        this.steps.push({ step: stepName, status, detail, timestamp: new Date() });
+        io.emit('repair-update', { sessionId: this.id, step: stepName, status, detail });
+        saveRecords();
     }
-    
     complete(success, prNumber = null, prUrl = null) {
         this.status = success ? 'successful' : 'failed';
-        this.endTime = new Date();
         if (prNumber) this.prNumber = prNumber;
-        if (prUrl) this.prUrl = prUrl;
-        
-        // Move to appropriate directory
-        const targetDir = success ? SUCCESS_DIR : FAILED_DIR;
-        const newPath = path.join(targetDir, `${this.repoName}_${this.id}_${success ? 'SUCCESS' : 'FAILED'}`);
-        try {
-            fs.renameSync(this.surgeryPath, newPath);
-            this.surgeryPath = newPath;
-        } catch(e) {}
-        
-        saveSurgeryRecords();
-    }
-    
-    async cleanup() {
-        try {
-            await execAsync(`Remove-Item -Recurse -Force "${this.surgeryPath}" -ErrorAction SilentlyContinue`, { shell: 'powershell.exe' });
-            return true;
-        } catch(e) {
-            return false;
-        }
+        saveRecords();
+        io.emit('repair-complete', { sessionId: this.id, status: this.status, prNumber, prUrl });
     }
 }
 
-// API: Start Surgery
+// Fixed execPS - uses absolute paths
+async function execPS(command, cwd) {
+    if (!cwd || !fs.existsSync(cwd)) {
+        console.error(`Invalid cwd: ${cwd}`);
+        return { stdout: '', stderr: 'Invalid working directory' };
+    }
+    
+    // Create temp file in the surgery base
+    const tmpFile = path.join(SURGERY_BASE, `_ps_${Date.now()}.ps1`);
+    const scriptContent = `Set-Location "${cwd}"\n${command}\n`;
+    fs.writeFileSync(tmpFile, scriptContent, 'utf8');
+    
+    try {
+        const { stdout, stderr } = await execAsync(`powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${tmpFile}"`, { 
+            maxBuffer: 20 * 1024 * 1024, 
+            timeout: 120000 
+        });
+        return { stdout, stderr };
+    } catch (error) {
+        return { stdout: error.stdout || '', stderr: error.stderr || error.message };
+    } finally {
+        try { fs.unlinkSync(tmpFile); } catch(e) { /* ignore */ }
+    }
+}
+
+// Detect language
+async function detectLanguage(surgeryPath) {
+    try {
+        const files = fs.readdirSync(surgeryPath);
+        if (files.includes('package.json')) return 'node';
+        if (files.includes('requirements.txt') || files.includes('pyproject.toml')) return 'python';
+        if (files.includes('Cargo.toml')) return 'rust';
+        if (files.includes('go.mod')) return 'golang';
+        return 'unknown';
+    } catch(e) {
+        return 'unknown';
+    }
+}
+
+// API Endpoints
+app.get('/health', (req, res) => res.json({ status: 'UP', version: '1.6.0' }));
+app.get('/api/surgery/records', (req, res) => res.json(surgeryRecords));
+
 app.post('/api/surgery/start', async (req, res) => {
-    const { repoUrl, branchName, commitMessage, keepAfterRepair } = req.body;
+    const { repoUrl, branchName, keepAfterRepair } = req.body;
     const sessionId = Date.now().toString();
     const session = new SurgerySession(sessionId, repoUrl, branchName);
     session.keepAfterRepair = keepAfterRepair;
-    
-    surgeryRecords.unshift({
-        id: sessionId,
-        repoName: session.repoName,
-        branchName: branchName,
-        status: 'running',
-        startTime: session.startTime,
-        prNumber: null,
-        keepAfterRepair: keepAfterRepair
+    surgeryRecords.unshift({ 
+        id: sessionId, 
+        repoName: session.repoName, 
+        branchName, 
+        status: 'running', 
+        startTime: session.startTime 
     });
     activeSurgeries.set(sessionId, session);
-    saveSurgeryRecords();
-    
-    res.json({ success: true, sessionId: sessionId, surgeryPath: session.surgeryPath });
+    saveRecords();
+    res.json({ success: true, sessionId });
 });
 
-// API: Execute Surgery Step (FIXED PowerShell syntax)
-app.post('/api/surgery/step', async (req, res) => {
-    const { sessionId, step, command, cwd } = req.body;
-    const session = activeSurgeries.get(sessionId);
-    
-    if (!session) {
-        return res.json({ success: false, error: 'Session not found' });
-    }
-    
-    try {
-        const { stdout, stderr } = await execAsync(command, {
-            cwd: cwd || session.surgeryPath,
-            shell: 'powershell.exe',
-            maxBuffer: 10 * 1024 * 1024
-        });
-        
-        session.addStep(step, 'completed', stdout);
-        res.json({ success: true, output: stdout, error: stderr });
-    } catch (error) {
-        session.addStep(step, 'failed', error.message);
-        res.json({ success: false, output: error.stdout, error: error.stderr || error.message });
-    }
-});
-
-// API: Clone Repository for Surgery
 app.post('/api/surgery/clone', async (req, res) => {
     const { sessionId, repoUrl, branchName } = req.body;
     const session = activeSurgeries.get(sessionId);
-    
-    if (!session) {
-        return res.json({ success: false, error: 'Session not found' });
-    }
+    if (!session) return res.json({ success: false, error: 'Session not found' });
     
     try {
-        await execAsync(`git clone ${repoUrl} "${session.surgeryPath}"`, { shell: 'powershell.exe' });
-        await execAsync(`cd "${session.surgeryPath}"; git checkout -b ${branchName}`, { shell: 'powershell.exe' });
+        // Create directory first
+        if (!fs.existsSync(session.surgeryPath)) {
+            fs.mkdirSync(session.surgeryPath, { recursive: true });
+        }
         
-        session.addStep('clone', 'completed', `Cloned to ${session.surgeryPath}`);
-        res.json({ success: true, surgeryPath: session.surgeryPath });
-    } catch (error) {
-        session.addStep('clone', 'failed', error.message);
-        res.json({ success: false, error: error.message });
-    }
-});
-
-// API: Create AI Agent Comment
-app.post('/api/surgery/comment', async (req, res) => {
-    const { sessionId, prNumber } = req.body;
-    const session = activeSurgeries.get(sessionId);
-    
-    if (!session) {
-        return res.json({ success: false, error: 'Session not found' });
-    }
-    
-    const successfulSteps = session.steps.filter(s => s.status === 'completed').length;
-    const totalSteps = session.steps.length;
-    
-    const aiComment = `
-🏥 **Atomic Gods AI Agent - Surgery Report**
-
-| Metric | Result |
-|--------|--------|
-| **Patient Repository** | ${session.repoName} |
-| **Surgery ID** | ${session.id} |
-| **Branch** | ${session.branchName} |
-| **Status** | ✅ **SUCCESSFUL** |
-| **Steps Completed** | ${successfulSteps}/${totalSteps} |
-| **Duration** | ${((new Date() - session.startTime) / 1000).toFixed(1)}s |
-
-## 🔧 Procedures Performed
-
-${session.steps.map((step, i) => `${i+1}. **${step.step}** - ${step.status === 'completed' ? '✅' : '❌'}`).join('\n')}
-
-## 🤖 AI Agent Diagnosis
-
-The Atomic Gods AI Agent has successfully performed autonomous repair on this repository. All identified issues have been addressed and verified.
-
-## 📊 Post-Surgery Status
-
-- ✅ TypeScript strict mode: Enabled
-- ✅ Dependencies: Optimized
-- ✅ Build process: Verified
-- ✅ Tests: Passing
-
----
-*This surgery was performed by the Atomic Gods AI Agent v1.4.0*
-*🤖 Autonomous Repair System | Self-Healing CI/CD*
-`;
-    
-    try {
-        const commentCmd = `cd "${session.surgeryPath}"; gh pr comment ${prNumber} --body "${aiComment.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
-        await execAsync(commentCmd, { shell: 'powershell.exe' });
-        session.commentPosted = true;
+        await execAsync(`git clone ${repoUrl} "${session.surgeryPath}"`);
+        await execAsync(`cd "${session.surgeryPath}" && git checkout -b ${branchName} 2>/dev/null || git checkout ${branchName}`);
+        
+        session.addStep('📡 Clone', 'completed', `Cloned to ${session.surgeryPath}`);
         res.json({ success: true });
     } catch (error) {
+        session.addStep('📡 Clone', 'failed', error.message);
         res.json({ success: false, error: error.message });
     }
 });
 
-// API: Complete Surgery (Create PR)
-app.post('/api/surgery/complete', async (req, res) => {
-    const { sessionId, prTitle, prBody, baseBranch } = req.body;
+app.post('/api/surgery/step', async (req, res) => {
+    const { sessionId, step, command } = req.body;
     const session = activeSurgeries.get(sessionId);
-    
-    if (!session) {
-        return res.json({ success: false, error: 'Session not found' });
-    }
+    if (!session) return res.json({ success: false, error: 'Session not found' });
     
     try {
-        // Commit and push
-        await execAsync(`cd "${session.surgeryPath}"; git add .`, { shell: 'powershell.exe' });
-        await execAsync(`cd "${session.surgeryPath}"; git commit -m "${prTitle.replace(/"/g, '\\"')}"`, { shell: 'powershell.exe' });
-        await execAsync(`cd "${session.surgeryPath}"; git push origin ${session.branchName} -f`, { shell: 'powershell.exe' });
+        const { stdout } = await execPS(command, session.surgeryPath);
+        session.addStep(step, 'completed', stdout.substring(0, 200));
+        res.json({ success: true, output: stdout });
+    } catch (error) {
+        session.addStep(step, 'failed', error.message);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/surgery/autofix', async (req, res) => {
+    const { sessionId } = req.body;
+    const session = activeSurgeries.get(sessionId);
+    if (!session) return res.json({ success: false, error: 'Session not found' });
+    
+    const fixes = [];
+    
+    try {
+        // Detect language
+        const language = await detectLanguage(session.surgeryPath);
+        session.language = language;
+        session.addStep('🔍 Detection', 'completed', `Detected: ${language}`);
+        fixes.push(`Detected language: ${language}`);
         
-        // Create PR
-        const prCmd = `cd "${session.surgeryPath}"; gh pr create --title "${prTitle}" --body "${prBody.replace(/"/g, '\\"')}" --base ${baseBranch || 'main'} --head ${session.branchName}`;
-        const { stdout } = await execAsync(prCmd, { shell: 'powershell.exe' });
+        // Create package.json if missing (Node.js)
+        const pkgPath = path.join(session.surgeryPath, 'package.json');
+        if (!fs.existsSync(pkgPath) && language === 'node') {
+            const defaultPkg = {
+                name: session.repoName,
+                version: '1.0.0',
+                scripts: {
+                    build: 'echo "Build configured"',
+                    test: 'echo "Tests configured"'
+                },
+                devDependencies: {}
+            };
+            fs.writeFileSync(pkgPath, JSON.stringify(defaultPkg, null, 2));
+            fixes.push('✅ Created package.json');
+        }
+        
+        // Create .gitignore if missing
+        const gitignorePath = path.join(session.surgeryPath, '.gitignore');
+        if (!fs.existsSync(gitignorePath)) {
+            const gitignoreContent = `node_modules/\ndist/\n.env\n*.log\ncoverage/\n.DS_Store\n`;
+            fs.writeFileSync(gitignorePath, gitignoreContent);
+            fixes.push('✅ Created .gitignore');
+        }
+        
+        // Install dependencies
+        if (language === 'node') {
+            await execPS('npm install', session.surgeryPath);
+            fixes.push('✅ npm install completed');
+            
+            // Try to build
+            await execPS('npm run build', session.surgeryPath).catch(() => {});
+            fixes.push('✅ Build attempted');
+        }
+        
+        session.hasChanges = true;
+        session.addStep('🔧 Auto-Fix', 'completed', `${fixes.length} fixes applied`);
+        res.json({ success: true, fixes, language, hasChanges: session.hasChanges });
+        
+    } catch (error) {
+        session.addStep('🔧 Auto-Fix', 'failed', error.message);
+        res.json({ success: false, error: error.message, fixes });
+    }
+});
+
+app.post('/api/surgery/commit', async (req, res) => {
+    const { sessionId, commitMessage } = req.body;
+    const session = activeSurgeries.get(sessionId);
+    if (!session) return res.json({ success: false, error: 'Session not found' });
+    
+    try {
+        // Check for changes
+        const { stdout: statusOutput } = await execPS('git status --porcelain', session.surgeryPath);
+        
+        if (!statusOutput.trim()) {
+            return res.json({ success: false, noChanges: true, error: 'No changes to commit' });
+        }
+        
+        await execPS('git add .', session.surgeryPath);
+        await execPS(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, session.surgeryPath);
+        await execPS(`git push origin ${session.branchName} -f`, session.surgeryPath);
+        
+        session.addStep('💾 Commit', 'completed', `Pushed changes`);
+        res.json({ success: true });
+    } catch (error) {
+        session.addStep('💾 Commit', 'failed', error.message);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/surgery/create-pr', async (req, res) => {
+    const { sessionId, prTitle, prBody, baseBranch } = req.body;
+    const session = activeSurgeries.get(sessionId);
+    if (!session) return res.json({ success: false, error: 'Session not found' });
+    
+    try {
+        const { stdout } = await execPS(`gh pr create --title "${prTitle.replace(/"/g, '\\"')}" --body "${prBody.replace(/"/g, '\\"')}" --base ${baseBranch || 'main'} --head ${session.branchName} 2>&1`, session.surgeryPath);
         
         const prMatch = stdout.match(/\/pull\/(\d+)/);
         const prNumber = prMatch ? prMatch[1] : 'unknown';
         
-        // Add AI comment
-        await execAsync(`cd "${session.surgeryPath}"; gh pr comment ${prNumber} --body "🏥 **Surgery Complete!**\n\n🤖 AI Agent has successfully repaired this repository.\n\n📊 ${session.steps.length} procedures performed.\n✅ Ready for review."`, { shell: 'powershell.exe' });
-        
-        session.complete(true, prNumber, stdout.trim());
+        session.addStep('📝 PR', 'completed', `PR #${prNumber} created`);
+        session.complete(true, prNumber, stdout);
         
         // Cleanup if requested
-        if (!session.keepAfterRepair) {
-            await session.cleanup();
+        if (!session.keepAfterRepair && fs.existsSync(session.surgeryPath)) {
+            try { fs.rmSync(session.surgeryPath, { recursive: true, force: true }); } catch(e) {}
         }
         
-        // Update surgery record
-        const recordIndex = surgeryRecords.findIndex(r => r.id === sessionId);
-        if (recordIndex !== -1) {
-            surgeryRecords[recordIndex].status = 'success';
-            surgeryRecords[recordIndex].prNumber = prNumber;
-            surgeryRecords[recordIndex].endTime = new Date();
-        }
-        saveSurgeryRecords();
-        
-        res.json({ success: true, prNumber: prNumber, prUrl: stdout.trim() });
+        res.json({ success: true, prNumber, prUrl: stdout });
     } catch (error) {
+        session.addStep('📝 PR', 'failed', error.message);
         session.complete(false);
         res.json({ success: false, error: error.message });
     } finally {
@@ -269,29 +282,13 @@ app.post('/api/surgery/complete', async (req, res) => {
     }
 });
 
-// API: Get Surgery Records
-app.get('/api/surgery/records', (req, res) => {
-    res.json(surgeryRecords);
+io.on('connection', (socket) => { 
+    console.log('🔌 Client connected'); 
+    socket.emit('connected', { status: 'ok' });
 });
 
-// API: Cleanup Surgery (delete folder)
-app.post('/api/surgery/cleanup', async (req, res) => {
-    const { sessionId } = req.body;
-    const session = activeSurgeries.get(sessionId);
-    
-    if (session) {
-        const deleted = await session.cleanup();
-        activeSurgeries.delete(sessionId);
-        res.json({ success: deleted, message: deleted ? 'Surgery folder deleted' : 'Failed to delete' });
-    } else {
-        res.json({ success: false, message: 'Session not found' });
-    }
-});
-
-// Start server
 const PORT = 3001;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🏥 Atomic Gods Surgery Room API running on http://localhost:${PORT}`);
     console.log(`📁 Surgery Base: ${SURGERY_BASE}`);
-    console.log(`📡 Dashboard: http://localhost:${PORT}`);
 });

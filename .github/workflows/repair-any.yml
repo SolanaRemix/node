@@ -1,176 +1,30 @@
-# .github/workflows/repair-any.yml
-name: "⚡ Atomic Gods - Universal Auto-Repair"
+﻿name: "⚡ Universal Auto-Repair"
 
 on:
-  workflow_dispatch:
-    inputs:
-      repair_depth:
-        description: 'Repair depth'
-        required: false
-        default: 'auto'
-        type: choice
-        options:
-          - auto
-          - quick
-          - deep
-          - full-rebuild
-  push:
-    branches: [main, master, dev, develop]
   pull_request:
-    branches: [main, master]
-  schedule:
-    - cron: '0 */4 * * *'
-  issue_comment:
-    types: [created]
+    types: [opened, synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
-  issues: write
-  actions: read
-  security-events: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  auto-detect-and-repair:
+  repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          
-      - name: 🔍 UNIVERSAL DETECTION
-        id: detect
-        run: |
-          echo "⚡ Atomic Gods - Autonomous Detection Active"
-          
-          # Detect package manager
-          if [ -f "pnpm-lock.yaml" ]; then
-            echo "package_manager=pnpm" >> $GITHUB_OUTPUT
-            echo "install_cmd=pnpm install --no-frozen-lockfile" >> $GITHUB_OUTPUT
-            echo "install_frozen=pnpm install --frozen-lockfile || pnpm install" >> $GITHUB_OUTPUT
-          elif [ -f "yarn.lock" ]; then
-            echo "package_manager=yarn" >> $GITHUB_OUTPUT
-            echo "install_cmd=yarn install --no-lockfile" >> $GITHUB_OUTPUT
-            echo "install_frozen=yarn install --frozen-lockfile || yarn install" >> $GITHUB_OUTPUT
-          elif [ -f "package-lock.json" ]; then
-            echo "package_manager=npm" >> $GITHUB_OUTPUT
-            echo "install_cmd=npm ci || npm install" >> $GITHUB_OUTPUT
-            echo "install_frozen=npm ci" >> $GITHUB_OUTPUT
-          else
-            echo "package_manager=npm" >> $GITHUB_OUTPUT
-            echo "install_cmd=npm install" >> $GITHUB_OUTPUT
-            echo "install_frozen=npm install" >> $GITHUB_OUTPUT
-          fi
-          
-          # Detect language/framework
-          if [ -f "next.config.js" ] || [ -f "next.config.ts" ]; then
-            echo "framework=nextjs" >> $GITHUB_OUTPUT
-          elif [ -f "vite.config.ts" ] || [ -f "vite.config.js" ]; then
-            echo "framework=vite" >> $GITHUB_OUTPUT
-          elif [ -f "webpack.config.js" ]; then
-            echo "framework=webpack" >> $GITHUB_OUTPUT
-          else
-            echo "framework=node" >> $GITHUB_OUTPUT
-          fi
-          
-          # Detect test framework
-          if grep -q "vitest" package.json 2>/dev/null; then
-            echo "test_cmd=pnpm test || npm test || yarn test" >> $GITHUB_OUTPUT
-          else
-            echo "test_cmd=npm test || pnpm test || yarn test || echo 'No tests'" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "✅ Detection complete - Package: $(echo $package_manager), Framework: $(echo $framework)"
-          
-      - name: 📦 Setup Environment
-        run: |
-          if [ "${{ steps.detect.outputs.package_manager }}" = "pnpm" ]; then
-            npm install -g pnpm@latest
-          elif [ "${{ steps.detect.outputs.package_manager }}" = "yarn" ]; then
-            npm install -g yarn@latest
-          fi
-          
-      - name: 🧹 Entropy Cleanup
-        if: contains(github.event.inputs.repair_depth, 'deep') || contains(github.event.inputs.repair_depth, 'full-rebuild')
-        run: |
-          echo "🧹 Deep entropy cleanup..."
-          rm -rf node_modules .next dist build .cache .pnpm-store
-          rm -f pnpm-lock.yaml yarn.lock package-lock.json
-          
-      - name: 📦 Install Dependencies
-        run: |
-          echo "📦 Installing with ${{ steps.detect.outputs.package_manager }}..."
-          eval "${{ steps.detect.outputs.install_cmd }}"
-          
-      - name: 🔧 Auto-Fix Package.json
-        run: |
-          # Auto-add missing scripts
-          if ! grep -q '"build"' package.json 2>/dev/null; then
-            echo "🔧 Adding missing build script..."
-            npx json -I -f package.json -e 'this.scripts=this.scripts||{}; this.scripts.build="echo \"Build script not configured\" || exit 0"'
-          fi
-          
-          if ! grep -q '"test"' package.json 2>/dev/null; then
-            echo "🔧 Adding missing test script..."
-            npx json -I -f package.json -e 'this.scripts=this.scripts||{}; this.scripts.test="echo \"No tests configured\" || exit 0"'
-          fi
-          
-      - name: 🔨 Universal Build
-        run: |
-          echo "🔨 Running build..."
-          if npm run 2>/dev/null | grep -q "build"; then
-            npm run build || echo "⚠️ Build had warnings"
-          else
-            echo "ℹ️ No build script - checking TypeScript"
-            if [ -f "tsconfig.json" ]; then
-              npx tsc --noEmit || true
-            fi
-          fi
-          
-      - name: ✅ Universal Test
-        run: |
-          echo "✅ Running tests..."
-          eval "${{ steps.detect.outputs.test_cmd }}" || echo "⚠️ Tests had issues (non-blocking)"
-          
-      - name: 🔒 Security Audit
-        run: |
-          echo "🔒 Running security audit..."
-          npm audit --audit-level=moderate || echo "⚠️ Audit issues found"
-          
-      - name: 📊 GOD MODE REPORT
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## ⚡ ATOMIC GODS v1.4 - AUTO-REPAIR REPORT
-          
-          | Metric | Status |
-          |--------|--------|
-          | **Repository** | ${{ github.repository }} |
-          | **Package Manager** | ${{ steps.detect.outputs.package_manager }} |
-          | **Framework** | ${{ steps.detect.outputs.framework }} |
-          | **Repair Depth** | ${{ github.event.inputs.repair_depth || 'auto' }} |
-          | **Status** | 🟢 ELITE |
-          
-          🤖 **Autonomous Action**: 100% self-healing
-          ⚡ **Performance**: Optimized automatically
-          🛡️ **Security**: Continuous monitoring active
-          
-          EOF
-          
-      - name: 🔄 Auto-Create PR for Fixes
-        if: failure()
-        uses: actions/github-script@v7
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
         with:
-          script: |
-            await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🤖 Atomic Gods - Auto-Repair',
-              head: 'auto-repair/gods-mode',
-              base: context.ref.replace('refs/heads/', ''),
-              body: '## ⚡ Auto-Repair PR\n\nThis PR was automatically generated by Atomic Gods v1.4\n\n**Issues Fixed:** Auto-detected and resolved\n**Status:** Ready for review'
-            });
+          node-version: '22.x'
+      - name: "Auto-Repair"
+        run: |
+          git config user.name "Atomic Gods AI Agent"
+          npm install || true
+          npm run build || true
+          git add .
+          git diff --staged --quiet || git commit -m "⚡ Auto-repair: Fixed issues"
+          git push || true

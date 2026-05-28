@@ -1,9 +1,10 @@
-﻿{
+{
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022", "DOM"],
+    "types": ["node"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -22,4 +23,3 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
-
