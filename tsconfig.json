@@ -1,25 +1,123 @@
 {
   "compilerOptions": {
+    // ============================================================
+    // Language & Environment
+    // ============================================================
     "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    // ============================================================
+    // Modules
+    // ============================================================
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022", "DOM"],
-    "types": ["node"],
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    
+    // ============================================================
+    // Output
+    // ============================================================
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "removeComments": false,
+    "noEmitOnError": false,
+    
+    // ============================================================
+    // Interop Constraints
+    // ============================================================
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    // ============================================================
+    // Type Checking - STRICT (Elite Enterprise)
+    // ============================================================
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    
+    // ============================================================
+    // Additional Checks
+    // ============================================================
+    "noUnusedLocals": false,  // Set to true for production
+    "noUnusedParameters": false,  // Set to true for production
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    
+    // ============================================================
+    // Performance & Advanced
+    // ============================================================
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    
+    // ============================================================
+    // Paths & Resolution
+    // ============================================================
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@core/*": ["src/core/*"],
+      "@auditor/*": ["src/auditor/*"],
+      "@enterprise/*": ["src/enterprise/*"],
+      "@brain/*": ["src/brain/*"],
+      "@types/*": ["src/types/*"]
+    },
+    
+    // ============================================================
+    // Types
+    // ============================================================
+    "types": ["node", "jest"],
+    
+    // ============================================================
+    // Emit
+    // ============================================================
+    "preserveConstEnums": true,
+    "stripInternal": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  
+  // ============================================================
+  // Include/Exclude
+  // ============================================================
+  "include": [
+    "src/**/*",
+    "src/**/*.json",
+    "test/**/*.ts",
+    "scripts/**/*.ts",
+    "surgery-room/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "blockchain/**/*",
+    "surgery-room/repairs/**/*",
+    "surgery-room/successful/**/*",
+    "surgery-room/failed/**/*"
+  ],
+  
+  // ============================================================
+  // References (for project references if needed)
+  // ============================================================
+  "references": []
 }
