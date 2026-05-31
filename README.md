@@ -1,4 +1,4 @@
-⚡ ATOMIC SWARM GODS ELITE v1.7.0
+#⚡ ATOMIC SWARM GODS ELITE v1.7.0
 
 https://img.shields.io/badge/License-MIT-yellow.svg
 https://img.shields.io/badge/node-18%2B%20%7C%2020%20%7C%2022%20%7C%2024-brightgreen
