@@ -11,13 +11,13 @@ https://img.shields.io/badge/Blockchain-AuditTrail-blueviolet
 https://img.shields.io/badge/Self‑Healing-92%25-success
 https://img.shields.io/badge/Confidence-99.97%25-brightgreen
 https://img.shields.io/badge/PRs-welcome-brightgreen.svg
+https://img.shields.io/github/stars/SolanaRemix/node?style=social
 
 ---
 
 🚀 Universal Auto‑Repair System for Any Language
 
-Atomic Swarm Gods Elite is the world’s most advanced self‑healing CI/CD platform.
-It automatically repairs any repository in any language, using AI agents, dynamic test shifting, blockchain‑verified audit trails, and FIPS‑compliant cryptography.
+Atomic Swarm Gods Elite is the world’s most advanced self‑healing CI/CD platform. It automatically repairs any repository in any language, using AI agents, dynamic test shifting, blockchain‑verified audit trails, and FIPS‑compliant cryptography.
 
 💎 Million‑dollar project quality – battle‑tested, enterprise‑ready, and built for zero‑downtime production environments.
 
@@ -103,6 +103,26 @@ Command Action Elite Feature
 @lock Frozen lockfile install 🔒 standard
 @build Build verification ✅ standard
 @test Test suite execution 🧪 enhanced
+
+🤖 GitHub Auto‑Trigger Example
+
+To automatically start a job when someone comments @eliteAudit on an issue, use the following workflow:
+
+```yaml
+name: Elite Auto-Repair
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  elite-repair:
+    if: contains(github.event.comment.body, '@eliteAudit')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install && npm run repair:full
+```
 
 ---
 
@@ -346,3 +366,5 @@ Enterprise Ready · Blockchain Verified · AI‑Powered
 ⭐ Star us on GitHub – 🔄 Fork for your enterprise – 🐛 Report bugs – 💡 Suggest features
 
 ---
+
+“Atomic Swarm Gods Elite – because your code deserves a self‑healing army.”
