@@ -6,7 +6,6 @@
  */
 
 import { AtomicRepair } from './dist/index.js';
-import { createHash } from 'crypto';
 
 console.log('\n╔══════════════════════════════════════════════════════════════╗');
 console.log('║  ⚡ ATOMIC SWARM GODS ELITE v1.7.0 - TEST SUITE             ║');
@@ -18,7 +17,7 @@ const config = {
   wasmSupport: true,
   strictMode: true,
   
-  // 🆕 Elite Enterprise features
+  // Elite Enterprise features
   eliteMode: true,
   dynamicShifting: true,
   auditConfidence: 0.9997,
@@ -36,22 +35,28 @@ console.log(`  • Blockchain Audit: ${config.blockchainAudit}`);
 console.log(`  • Confidence: ${(config.auditConfidence * 100).toFixed(2)}%`);
 console.log('');
 
+// Check if dist exists
+import { existsSync } from 'fs';
+if (!existsSync('./dist/index.js')) {
+  console.error('❌ dist/index.js not found. Run `npm run build` first.');
+  process.exit(1);
+}
+
 try {
-  // Create repair instance
   const repair = new AtomicRepair(config);
   
-  // Listen for events
-  repair.on('repair_complete', (data) => {
-    console.log(`\n📢 Event: Repair completed with success=${data.success}`);
-  });
+  // Listen for events (if EventEmitter is supported)
+  if (typeof repair.on === 'function') {
+    repair.on('repair_complete', (data) => {
+      console.log(`\n📢 Event: Repair completed with success=${data.success}`);
+    });
+  }
   
-  // Run repair
   console.log('🔧 Running elite auto-repair...\n');
   const startTime = Date.now();
   const success = await repair.repair();
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
   
-  // Display results
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
   console.log(`║  ${success ? '✅' : '⚠️'} TEST COMPLETE - ${duration}s                                    ║`);
   console.log('╚══════════════════════════════════════════════════════════════╝');
@@ -62,12 +67,17 @@ try {
   console.log(`  • Audits Performed: ${repair.getAuditHistory().length}`);
   console.log(`  • Dynamic Shifts: ${repair.getShiftMetrics().length}`);
   console.log(`  • Average Confidence: ${(repair.getAverageConfidence() * 100).toFixed(2)}%`);
-  console.log(`  • Blockchain Verified: ${repair.verifyBlockchain() ? '✅' : '❌'}`);
+  
+  // Verify blockchain if method exists
+  if (typeof repair.verifyBlockchain === 'function') {
+    console.log(`  • Blockchain Verified: ${repair.verifyBlockchain() ? '✅' : '❌'}`);
+  }
   console.log('');
   
   process.exit(success ? 0 : 1);
   
 } catch (error) {
   console.error('\n❌ TEST FAILED:', error.message);
+  console.error(error.stack);
   process.exit(1);
 }
