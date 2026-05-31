@@ -21,7 +21,9 @@
     "shift:tests": "node surgery-room/DynamicTestShifter.js --elite-mode",
     "repair:full": "npm run audit:dynamic && npm run repair:adaptive && npm run test:elite",
     "oracle:train": "ts-node src/brain/OracleMemoryTrainer.ts",
-    "dashboard:elite": "node server.js --elite-dashboard"
+    "dashboard:elite": "node server.js --elite-dashboard",
+    "postinstall": "npm run build",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -38,10 +40,10 @@
     "prometheus-client": "^1.1.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.0",
-    "@types/node": "^20.0.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
     "@types/cors": "^2.8.17",
-    "@types/socket.io": "^3.0.0",
+    "@types/socket.io": "^4.0.0",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
     "typescript": "^5.9.3",
