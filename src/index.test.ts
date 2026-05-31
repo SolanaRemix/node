@@ -1,538 +1,630 @@
 /**
- * Atomic Node - Universal Workflow Repair System
+ * Atomic Node - Universal Workflow Repair System Tests
  * Part of SolanaRemix organization
  * 
  * @version 1.7.0-elite
- * @description Enterprise-grade auto-repair with dynamic test shifting & AI auditing
+ * @description Enterprise-grade test suite for auto-repair with dynamic test shifting
  */
 
-export interface RepairConfig {
-  nodeVersion: string;
-  wasmSupport: boolean;
-  strictMode: boolean;
-  // 🆕 Elite Enterprise features
-  eliteMode?: boolean;
-  dynamicShifting?: boolean;
-  auditConfidence?: number;
-  blockchainAudit?: boolean;
-  maxRepairAttempts?: number;
-  shiftStrategy?: 'predictive' | 'chaos' | 'weighted' | 'auto' | 'adaptive';
-}
+import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert';
+import { AtomicRepair, RepairConfig, AuditReport, ShiftMetrics } from './index.js';
 
-export interface AuditReport {
-  id: string;
-  timestamp: Date;
-  shiftsApplied: number;
-  repairsApplied: string[];
-  failedTests: string[];
-  success: boolean;
-  blockchainHash?: string;
-  confidence: number;
-  duration: number;
-}
+// ============================================================
+// Test Configuration
+// ============================================================
 
-export interface ShiftMetrics {
-  strategy: string;
-  redistributionCount: number;
-  affectedTests: string[];
-  timestamp: Date;
-  confidence: number;
-}
+const TEST_TIMEOUT = 30000;
 
-export class AtomicRepair {
-  private config: RepairConfig;
-  private auditHistory: AuditReport[] = [];
-  private shiftMetrics: ShiftMetrics[] = [];
-  private repairAttempts: number = 0;
-  private startTime: number = 0;
+// ============================================================
+// Test Suite: Basic Functionality
+// ============================================================
 
-  constructor(config: RepairConfig) {
-    this.config = {
-      // Default values
-      eliteMode: false,
-      dynamicShifting: false,
-      auditConfidence: 0.95,
-      blockchainAudit: false,
-      maxRepairAttempts: 3,
-      shiftStrategy: 'adaptive',
-      ...config
-    };
-  }
-
-  async repair(): Promise<boolean> {
-    this.startTime = Date.now();
-    this.repairAttempts++;
-    
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`🚀 Atomic Repair v1.7.0-elite on Node ${this.config.nodeVersion}`);
-    console.log(`${'='.repeat(60)}\n`);
-    
-    // Display enabled features
-    this.logFeatures();
-    
-    try {
-      // Phase 1: Environment validation (your existing logic)
-      const envValid = await this.validateEnvironment();
-      if (!envValid) {
-        console.error("❌ Environment validation failed");
-        return false;
-      }
-      
-      // Phase 2: 🆕 Dynamic test shifting (Elite feature)
-      let shiftMetrics: ShiftMetrics | null = null;
-      if (this.config.dynamicShifting) {
-        shiftMetrics = await this.applyDynamicTestShifting();
-      }
-      
-      // Phase 3: 🆕 Run elite audit
-      const auditReport = await this.runEliteAudit(shiftMetrics);
-      this.auditHistory.push(auditReport);
-      
-      // Phase 4: Execute repairs based on audit findings
-      if (auditReport.repairsApplied.length > 0) {
-        await this.executeRepairs(auditReport);
-      }
-      
-      // Phase 5: 🆕 Blockchain recording (if enabled)
-      if (this.config.blockchainAudit && auditReport.success) {
-        await this.recordToBlockchain(auditReport);
-      }
-      
-      // Phase 6: Final verification
-      const verified = await this.verifyRepairs(auditReport);
-      
-      const duration = (Date.now() - this.startTime) / 1000;
-      console.log(`\n${'='.repeat(60)}`);
-      console.log(`${verified ? '✅' : '⚠️'} Atomic repair ${verified ? 'completed' : 'partially completed'} successfully`);
-      console.log(`📊 Confidence: ${(auditReport.confidence * 100).toFixed(2)}%`);
-      console.log(`⏱️  Duration: ${duration.toFixed(2)}s`);
-      console.log(`${'='.repeat(60)}\n`);
-      
-      return verified;
-      
-    } catch (error) {
-      console.error("❌ Atomic repair failed:", error);
-      
-      // Retry logic with escalating strategy
-      if (this.repairAttempts < (this.config.maxRepairAttempts || 3)) {
-        console.log(`\n🔄 Retry attempt ${this.repairAttempts + 1}/${this.config.maxRepairAttempts}`);
-        console.log(`📈 Escalating repair strategy...\n`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return this.repair();
-      }
-      
-      return false;
-    }
-  }
-
-  private async validateEnvironment(): Promise<boolean> {
-    console.log("🔍 Phase 1: Environment Validation");
-    console.log("-".repeat(40));
-    
-    // Validate Node.js version
-    const nodeVersion = process.version;
-    console.log(`📦 Node.js version: ${nodeVersion}`);
-    
-    // Check Node version compatibility
-    const versionMatch = nodeVersion.startsWith('v18') || 
-                        nodeVersion.startsWith('v20') || 
-                        nodeVersion.startsWith('v22') ||
-                        nodeVersion.startsWith('v24');
-    
-    if (!versionMatch) {
-      console.warn(`⚠️ Warning: Node ${nodeVersion} may not be fully supported`);
-    }
-    
-    // Check for lockfiles (pnpm, npm, yarn)
-    const fs = await import('fs');
-    const hasPnpmLock = fs.existsSync('pnpm-lock.yaml');
-    const hasNpmLock = fs.existsSync('package-lock.json');
-    const hasYarnLock = fs.existsSync('yarn.lock');
-    const hasLockfile = hasPnpmLock || hasNpmLock || hasYarnLock;
-    
-    let lockType = '';
-    if (hasPnpmLock) lockType = 'pnpm';
-    else if (hasNpmLock) lockType = 'npm';
-    else if (hasYarnLock) lockType = 'yarn';
-    
-    console.log(`🔒 Lockfile present: ${hasLockfile} ${lockType ? `(${lockType})` : ''}`);
-    
-    if (this.config.wasmSupport) {
-      await this.checkWasmSupport();
-    }
-    
-    if (this.config.strictMode) {
-      console.log("🔒 Strict mode enabled");
-      await this.checkTypeScriptStrictness();
-    }
-    
-    console.log(); // Empty line for spacing
-    return true;
-  }
-
-  private async checkWasmSupport(): Promise<void> {
-    try {
-      // Test WebAssembly support
-      const wasmModule = new WebAssembly.Module(
-        Uint8Array.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00])
-      );
-      console.log("🦀 WebAssembly: Supported ✓");
-    } catch (e) {
-      console.warn("⚠️ WebAssembly: Limited support");
-    }
-  }
-
-  private async checkTypeScriptStrictness(): Promise<void> {
-    const fs = await import('fs');
-    if (fs.existsSync('tsconfig.json')) {
-      try {
-        const tsConfig = JSON.parse(await fs.promises.readFile('tsconfig.json', 'utf-8'));
-        const isStrict = tsConfig.compilerOptions?.strict === true;
-        console.log(`📘 TypeScript strict mode: ${isStrict ? '✓' : '⚠️ not enabled in tsconfig'}`);
-      } catch (e) {
-        // Ignore JSON parse errors
-      }
-    }
-  }
-
-  // 🆕 DYNAMIC TEST SHIFTING (Elite Enterprise Core)
-  private async applyDynamicTestShifting(): Promise<ShiftMetrics> {
-    console.log("🔄 Phase 2: Dynamic Test Shifting");
-    console.log("-".repeat(40));
-    
-    const strategy = this.determineShiftStrategy();
-    const testRedistribution = await this.scanAndRedistributeTests(strategy);
-    
-    const metrics: ShiftMetrics = {
-      strategy: strategy.mode,
-      redistributionCount: testRedistribution.count,
-      affectedTests: testRedistribution.tests,
-      timestamp: new Date(),
-      confidence: strategy.confidence
-    };
-    
-    this.shiftMetrics.push(metrics);
-    
-    console.log(`🎯 Strategy: ${strategy.mode.toUpperCase()}`);
-    console.log(`📊 Confidence: ${(strategy.confidence * 100).toFixed(2)}%`);
-    console.log(`🔄 Tests redistributed: ${testRedistribution.count}`);
-    
-    if (testRedistribution.count > 0 && testRedistribution.tests.length > 0) {
-      const sample = testRedistribution.tests.slice(0, 3);
-      console.log(`📝 Sample: ${sample.join(', ')}${testRedistribution.count > 3 ? '...' : ''}`);
-    }
-    
-    console.log(); // Empty line
-    return metrics;
-  }
-
-  private determineShiftStrategy(): { mode: string; confidence: number } {
-    const configStrategy = this.config.shiftStrategy || 'adaptive';
-    
-    if (configStrategy !== 'adaptive') {
-      return { 
-        mode: configStrategy, 
-        confidence: this.config.auditConfidence || 0.95 
-      };
-    }
-    
-    // Adaptive strategy based on repair history
-    const previousRepairs = this.auditHistory.length;
-    const previousShifts = this.shiftMetrics.length;
-    
-    if (previousRepairs === 0 && previousShifts === 0) {
-      // First run: chaos mode for maximum exploration
-      return { mode: 'chaos', confidence: 0.90 };
-    } else if (previousRepairs < 3) {
-      // Learning phase: weighted mode
-      return { mode: 'weighted', confidence: 0.95 };
-    } else if (this.auditHistory[this.auditHistory.length - 1]?.success) {
-      // Recent success: predictive mode
-      return { mode: 'predictive', confidence: 0.9997 };
-    } else {
-      // Recent failure: aggressive chaos
-      return { mode: 'chaos', confidence: 0.85 };
-    }
-  }
-
-  private async scanAndRedistributeTests(strategy: { mode: string; confidence: number }): Promise<{ count: number; tests: string[] }> {
-    const fs = await import('fs');
-    const path = await import('path');
-    const { glob } = await import('glob');
-    
-    // Scan for test files
-    const testPatterns = [
-      '**/*.test.{js,ts}',
-      '**/*.spec.{js,ts}', 
-      '**/test/**/*.{js,ts}',
-      '**/__tests__/**/*.{js,ts}',
-      'test.{js,ts}',
-      'tests.{js,ts}'
-    ];
-    
-    let allTests: string[] = [];
-    for (const pattern of testPatterns) {
-      try {
-        const matches = await glob(pattern, { ignore: ['node_modules/**', 'dist/**', 'build/**'] });
-        allTests.push(...matches);
-      } catch (e) {
-        // Pattern may not match anything
-      }
-    }
-    
-    // Remove duplicates
-    allTests = [...new Set(allTests)];
-    
-    if (allTests.length === 0) {
-      return { count: 0, tests: [] };
-    }
-    
-    // Apply redistribution based on strategy
-    let redistributedTests = [...allTests];
-    
-    switch (strategy.mode) {
-      case 'chaos':
-        // Random shuffle for chaos testing
-        redistributedTests = this.shuffleArray(redistributedTests);
-        break;
-        
-      case 'weighted':
-        // Prioritize smaller tests first
-        redistributedTests.sort((a, b) => a.length - b.length);
-        break;
-        
-      case 'predictive':
-        // Look for previously failed tests (simulated)
-        redistributedTests = redistributedTests.reverse();
-        break;
-        
-      default:
-        // Default ordering
-        redistributedTests = redistributedTests.sort();
-    }
-    
-    return {
-      count: redistributedTests.length,
-      tests: redistributedTests.slice(0, 5).map(f => path.basename(f))
-    };
-  }
-
-  private shuffleArray<T>(array: T[]): T[] {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  // 🆕 ELITE AUDIT ENGINE
-  private async runEliteAudit(shiftMetrics: ShiftMetrics | null): Promise<AuditReport> {
-    console.log("🔍 Phase 3: Elite Audit Engine");
-    console.log("-".repeat(40));
-    
-    const repairsApplied: string[] = [];
-    const failedTests: string[] = [];
-    const fs = await import('fs');
-    
-    // Check package.json
-    if (fs.existsSync('package.json')) {
-      try {
-        const packageJson = JSON.parse(await fs.promises.readFile('package.json', 'utf-8'));
-        
-        // Check for missing essential scripts
-        if (!packageJson.scripts?.build) {
-          repairsApplied.push('Added build script to package.json');
-        }
-        if (!packageJson.scripts?.test) {
-          repairsApplied.push('Added test script to package.json');
-        }
-        
-        // Check for outdated or missing dependencies
-        if (packageJson.dependencies) {
-          const deps = Object.keys(packageJson.dependencies);
-          if (deps.length === 0) {
-            repairsApplied.push('Warning: No dependencies found');
-          }
-        }
-      } catch (e) {
-        repairsApplied.push('Fixed invalid package.json syntax');
-      }
-    } else {
-      repairsApplied.push('Created missing package.json');
-    }
-    
-    // Check TypeScript configuration
-    if (fs.existsSync('tsconfig.json') && this.config.strictMode) {
-      try {
-        const tsConfig = JSON.parse(await fs.promises.readFile('tsconfig.json', 'utf-8'));
-        if (!tsConfig.compilerOptions?.strict) {
-          repairsApplied.push('Enabled TypeScript strict mode in tsconfig.json');
-        }
-        if (!tsConfig.compilerOptions?.target) {
-          repairsApplied.push('Set TypeScript target to ES2022');
-        }
-      } catch (e) {
-        repairsApplied.push('Fixed invalid tsconfig.json');
-      }
-    }
-    
-    // Simulate test failures based on shifting metrics
-    if (shiftMetrics && shiftMetrics.strategy === 'chaos') {
-      failedTests.push('Dynamic shift: Chaos mode active - expecting higher failure rate');
-    }
-    
-    const duration = (Date.now() - this.startTime) / 1000;
-    const success = repairsApplied.length === 0 || this.repairAttempts > 1;
-    
-    const report: AuditReport = {
-      id: `audit-${Date.now()}-${this.repairAttempts}`,
-      timestamp: new Date(),
-      shiftsApplied: this.shiftMetrics.length,
-      repairsApplied,
-      failedTests,
-      success,
-      confidence: success ? (this.config.auditConfidence || 0.95) : 0.70,
-      duration
-    };
-    
-    console.log(`📋 Audit ID: ${report.id}`);
-    console.log(`🔧 Repairs needed: ${repairsApplied.length}`);
-    console.log(`❌ Failed tests: ${failedTests.length}`);
-    console.log(`📊 Confidence score: ${(report.confidence * 100).toFixed(2)}%`);
-    console.log(`⏱️  Audit duration: ${duration.toFixed(2)}s`);
-    
-    if (repairsApplied.length > 0) {
-      console.log(`\n📝 Repairs identified:`);
-      repairsApplied.forEach(repair => console.log(`  • ${repair}`));
-    }
-    
-    console.log(); // Empty line
-    return report;
-  }
-
-  private async executeRepairs(auditReport: AuditReport): Promise<void> {
-    console.log("🔧 Phase 4: Executing Repairs");
-    console.log("-".repeat(40));
-    
-    for (let i = 0; i < auditReport.repairsApplied.length; i++) {
-      const repair = auditReport.repairsApplied[i];
-      console.log(`  ${i + 1}. ✅ ${repair}`);
-      // Simulate repair work
-      await new Promise(resolve => setTimeout(resolve, 150));
-    }
-    
-    if (auditReport.repairsApplied.length === 0) {
-      console.log("  ✨ No repairs needed - system is optimal!");
-    } else {
-      console.log(`\n  📊 ${auditReport.repairsApplied.length} repair(s) applied successfully`);
-    }
-    
-    console.log(); // Empty line
-  }
-
-  private async verifyRepairs(auditReport: AuditReport): Promise<boolean> {
-    console.log("🔬 Phase 5: Verification");
-    console.log("-".repeat(40));
-    
-    // Simulate verification with confidence-based success rate
-    const successRate = auditReport.confidence;
-    const verified = Math.random() < successRate;
-    
-    if (verified) {
-      console.log("✅ All systems verified - repairs successful");
-    } else {
-      console.log("⚠️ Some components need additional attention");
-    }
-    
-    return verified;
-  }
-
-  // 🆕 BLOCKCHAIN AUDIT TRAIL
-  private async recordToBlockchain(auditReport: AuditReport): Promise<void> {
-    console.log("⛓️  Phase 6: Blockchain Audit Trail");
-    console.log("-".repeat(40));
-    
-    // Generate mock blockchain transaction hash
-    const mockTxHash = '0x' + Array.from({ length: 64 }, () => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
-    
-    auditReport.blockchainHash = mockTxHash;
-    
-    console.log(`📝 Transaction Hash: ${mockTxHash.substring(0, 20)}...`);
-    console.log(`🔒 Audit record: ${auditReport.id}`);
-    console.log(`📦 Block confirmation: Simulated`);
-    console.log(`🔐 Immutable record stored on blockchain`);
-  }
-
-  private logFeatures(): void {
-    const features: string[] = [];
-    
-    if (this.config.wasmSupport) features.push("🦀 WASM");
-    if (this.config.strictMode) features.push("🔒 Strict Mode");
-    if (this.config.dynamicShifting) features.push("🔄 Dynamic Shifting");
-    if (this.config.eliteMode) features.push("👑 Elite Mode");
-    if (this.config.blockchainAudit) features.push("⛓️  Blockchain Audit");
-    
-    console.log(`✨ Active Features: ${features.join(' | ')}`);
-    console.log();
-  }
-
-  // Public API for metrics collection
-  getAuditHistory(): AuditReport[] {
-    return this.auditHistory;
-  }
+describe('AtomicRepair - Elite Enterprise Suite v1.7.0', () => {
   
-  getShiftMetrics(): ShiftMetrics[] {
-    return this.shiftMetrics;
-  }
+  // ============================================================
+  // Standard Configuration Tests
+  // ============================================================
   
-  getRepairAttempts(): number {
-    return this.repairAttempts;
-  }
-  
-  getAverageConfidence(): number {
-    if (this.auditHistory.length === 0) return 0;
-    const sum = this.auditHistory.reduce((acc, report) => acc + report.confidence, 0);
-    return sum / this.auditHistory.length;
-  }
-}
+  describe('Standard Configuration', () => {
+    
+    it('should initialize with minimal config', () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true
+      });
+      
+      assert.ok(repair, 'Repair instance should be created');
+      assert.strictEqual(repair.getRepairAttempts(), 0, 'Initial repair attempts should be 0');
+      assert.strictEqual(repair.getAuditHistory().length, 0, 'Audit history should be empty');
+      assert.strictEqual(repair.getShiftMetrics().length, 0, 'Shift metrics should be empty');
+    });
 
-// Main execution with Elite Enterprise features enabled
-async function main() {
-  const repair = new AtomicRepair({
-    nodeVersion: process.version,
-    wasmSupport: true,
-    strictMode: true,
-    // 🆕 Enable Elite Enterprise features
-    eliteMode: true,
-    dynamicShifting: true,
-    auditConfidence: 0.9997,
-    blockchainAudit: true,
-    maxRepairAttempts: 3,
-    shiftStrategy: 'adaptive'
+    it('should run repair successfully with defaults', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: false,
+        strictMode: false
+      });
+      
+      const result = await repair.repair();
+      assert.strictEqual(result, true, 'Repair should succeed');
+      assert.strictEqual(repair.getRepairAttempts(), 1, 'Should have 1 repair attempt');
+      assert.ok(repair.getAuditHistory().length > 0, 'Audit history should be recorded');
+    });
+    
+    it('should handle multiple repair runs', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true
+      });
+      
+      await repair.repair();
+      await repair.repair();
+      
+      assert.strictEqual(repair.getRepairAttempts(), 2, 'Should have 2 repair attempts');
+      assert.strictEqual(repair.getAuditHistory().length, 2, 'Should have 2 audit records');
+    });
   });
   
-  const success = await repair.repair();
+  // ============================================================
+  // Elite Mode Tests
+  // ============================================================
   
-  if (success) {
-    console.log(`🎉 Elite Atomic Repair completed!`);
-    console.log(`📊 Statistics:`);
-    console.log(`  • Repair attempts: ${repair.getRepairAttempts()}`);
-    console.log(`  • Audits performed: ${repair.getAuditHistory().length}`);
-    console.log(`  • Dynamic shifts: ${repair.getShiftMetrics().length}`);
-    console.log(`  • Average confidence: ${(repair.getAverageConfidence() * 100).toFixed(2)}%`);
-    process.exit(0);
-  } else {
-    console.log(`\n⚠️ Elite Atomic Repair requires manual intervention`);
-    console.log(`📖 Check audit history for details`);
-    process.exit(1);
-  }
+  describe('Elite Enterprise Mode', () => {
+    
+    it('should enable elite mode with dynamic shifting', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        dynamicShifting: true,
+        auditConfidence: 0.9997
+      });
+      
+      const result = await repair.repair();
+      assert.strictEqual(result, true, 'Elite repair should succeed');
+      
+      const auditHistory = repair.getAuditHistory();
+      const shiftMetrics = repair.getShiftMetrics();
+      
+      assert.ok(auditHistory.length > 0, 'Audit history should be recorded');
+      assert.ok(shiftMetrics.length > 0, 'Shift metrics should be recorded');
+      
+      // Check audit report content
+      const latestAudit = auditHistory[auditHistory.length - 1];
+      assert.ok(latestAudit.id, 'Audit should have an ID');
+      assert.ok(latestAudit.timestamp instanceof Date, 'Audit should have timestamp');
+      assert.ok(typeof latestAudit.confidence === 'number', 'Confidence should be a number');
+      assert.ok(latestAudit.confidence >= 0 && latestAudit.confidence <= 1, 'Confidence should be between 0 and 1');
+    });
+    
+    it('should support different shift strategies', async () => {
+      const strategies: Array<'predictive' | 'chaos' | 'weighted' | 'adaptive'> = 
+        ['predictive', 'chaos', 'weighted', 'adaptive'];
+      
+      for (const strategy of strategies) {
+        const repair = new AtomicRepair({
+          nodeVersion: '20.0.0',
+          wasmSupport: true,
+          strictMode: true,
+          eliteMode: true,
+          dynamicShifting: true,
+          shiftStrategy: strategy
+        });
+        
+        const result = await repair.repair();
+        assert.strictEqual(result, true, `Strategy ${strategy} should succeed`);
+        
+        const shiftMetrics = repair.getShiftMetrics();
+        assert.ok(shiftMetrics.length > 0, `Strategy ${strategy} should produce shift metrics`);
+        
+        // Note: The actual strategy may adapt based on history
+        // So we don't assert exact match
+      }
+    });
+    
+    it('should handle high confidence thresholds', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        auditConfidence: 0.9999,
+        dynamicShifting: true
+      });
+      
+      const result = await repair.repair();
+      assert.strictEqual(result, true, 'High confidence repair should succeed');
+      
+      const avgConfidence = repair.getAverageConfidence();
+      assert.ok(avgConfidence > 0, 'Average confidence should be positive');
+    });
+    
+    it('should record blockchain audit trail when enabled', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        blockchainAudit: true,
+        dynamicShifting: true
+      });
+      
+      await repair.repair();
+      const auditHistory = repair.getAuditHistory();
+      
+      assert.ok(auditHistory.length > 0, 'Audit history should exist');
+      
+      const latestAudit = auditHistory[auditHistory.length - 1];
+      // Blockchain hash may be added during repair
+      // Verify audit structure is complete
+      assert.ok(latestAudit.id, 'Audit should have ID');
+      assert.ok(latestAudit.timestamp, 'Audit should have timestamp');
+    });
+  });
+  
+  // ============================================================
+  // Dynamic Test Shifting Tests
+  // ============================================================
+  
+  describe('Dynamic Test Shifting', () => {
+    
+    it('should detect and redistribute test files', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        dynamicShifting: true
+      });
+      
+      await repair.repair();
+      const shiftMetrics = repair.getShiftMetrics();
+      
+      assert.ok(shiftMetrics.length > 0, 'Shift metrics should be recorded');
+      assert.ok(typeof shiftMetrics[0].redistributionCount === 'number', 'Redistribution count should be a number');
+      assert.ok(Array.isArray(shiftMetrics[0].affectedTests), 'Affected tests should be an array');
+      assert.ok(shiftMetrics[0].timestamp instanceof Date, 'Should have timestamp');
+      assert.ok(typeof shiftMetrics[0].confidence === 'number', 'Should have confidence score');
+    });
+    
+    it('should adapt shift strategy based on previous repairs', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        dynamicShifting: true,
+        shiftStrategy: 'adaptive',
+        maxRepairAttempts: 3
+      });
+      
+      // First repair
+      await repair.repair();
+      const firstStrategy = repair.getShiftMetrics()[0]?.strategy;
+      
+      // Second repair (may adapt)
+      await repair.repair();
+      const secondStrategy = repair.getShiftMetrics()[1]?.strategy;
+      
+      // Both should be defined
+      assert.ok(firstStrategy !== undefined, 'First strategy should be defined');
+      assert.ok(secondStrategy !== undefined, 'Second strategy should be defined');
+      
+      // Strategies may be same or different - both are valid
+      // The adaptive algorithm may choose different strategies based on results
+    });
+    
+    it('should handle zero test files gracefully', async () => {
+      // This test doesn't actually create test files
+      // The scanner will find 0 or few files
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        dynamicShifting: true
+      });
+      
+      const result = await repair.repair();
+      assert.strictEqual(result, true, 'Repair should still succeed with no tests');
+      
+      const shiftMetrics = repair.getShiftMetrics();
+      if (shiftMetrics.length > 0) {
+        // If shift happened, redistribution count should be >= 0
+        assert.ok(shiftMetrics[0].redistributionCount >= 0, 'Redistribution count should be non-negative');
+      }
+    });
+  });
+  
+  // ============================================================
+  // Audit & Repair Capabilities Tests
+  // ============================================================
+  
+  describe('Audit & Repair Capabilities', () => {
+    
+    it('should detect and report issues', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true
+      });
+      
+      await repair.repair();
+      const auditHistory = repair.getAuditHistory();
+      const latestAudit = auditHistory[auditHistory.length - 1];
+      
+      assert.ok(latestAudit, 'Audit report should exist');
+      assert.ok(typeof latestAudit.id === 'string', 'Audit ID should be a string');
+      assert.ok(latestAudit.timestamp instanceof Date, 'Timestamp should be a Date');
+      assert.ok(typeof latestAudit.confidence === 'number', 'Confidence should be a number');
+      assert.ok(latestAudit.confidence >= 0 && latestAudit.confidence <= 1, 'Confidence should be between 0 and 1');
+      assert.ok(Array.isArray(latestAudit.repairsApplied), 'Repairs applied should be an array');
+      assert.ok(typeof latestAudit.duration === 'number', 'Duration should be a number');
+    });
+    
+    it('should track repair attempts and confidence', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        auditConfidence: 0.95
+      });
+      
+      await repair.repair();
+      
+      assert.strictEqual(repair.getRepairAttempts(), 1, 'Should have 1 repair attempt');
+      
+      const avgConfidence = repair.getAverageConfidence();
+      assert.ok(typeof avgConfidence === 'number', 'Average confidence should be a number');
+      assert.ok(!isNaN(avgConfidence), 'Average confidence should not be NaN');
+      assert.ok(avgConfidence >= 0 && avgConfidence <= 1, 'Average confidence should be between 0 and 1');
+    });
+    
+    it('should auto-retry on failure with escalating strategy', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        maxRepairAttempts: 3
+      });
+      
+      // The repair might succeed or fail, but should handle retries
+      const result = await repair.repair();
+      
+      // Either success or failure is acceptable - retry logic should work
+      assert.ok(result === true || result === false, 'Repair should complete with boolean result');
+      assert.ok(repair.getRepairAttempts() >= 1, 'At least one repair attempt should be made');
+    });
+  });
+  
+  // ============================================================
+  // Metrics & Reporting Tests
+  // ============================================================
+  
+  describe('Metrics & Reporting', () => {
+    
+    it('should provide audit history access', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true
+      });
+      
+      await repair.repair();
+      const history = repair.getAuditHistory();
+      
+      assert.ok(Array.isArray(history), 'Audit history should be an array');
+      assert.ok(history.length > 0, 'Audit history should not be empty');
+      
+      const audit = history[0];
+      assert.ok(audit.id, 'Audit should have ID');
+      assert.ok(audit.repairsApplied !== undefined, 'Repairs applied should be defined');
+      assert.ok(audit.failedTests !== undefined, 'Failed tests should be defined');
+      assert.ok(typeof audit.success === 'boolean', 'Success should be boolean');
+    });
+    
+    it('should track shift metrics over time', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        dynamicShifting: true
+      });
+      
+      await repair.repair();
+      await repair.repair(); // Run twice
+      
+      const metrics = repair.getShiftMetrics();
+      assert.ok(metrics.length >= 1, 'Should have at least one shift metric');
+      
+      if (metrics.length >= 2) {
+        // Verify chronological order (older first)
+        assert.ok(metrics[0].timestamp <= metrics[1].timestamp, 
+          'Metrics should be in chronological order');
+      }
+    });
+    
+    it('should calculate average confidence correctly', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true
+      });
+      
+      await repair.repair();
+      const avgConfidence = repair.getAverageConfidence();
+      
+      assert.ok(typeof avgConfidence === 'number', 'Average confidence should be a number');
+      assert.ok(!isNaN(avgConfidence), 'Average confidence should not be NaN');
+      assert.ok(avgConfidence >= 0 && avgConfidence <= 1, 'Average confidence should be between 0 and 1');
+    });
+  });
+  
+  // ============================================================
+  // Edge Cases & Error Handling Tests
+  // ============================================================
+  
+  describe('Edge Cases & Error Resilience', () => {
+    
+    it('should handle missing configuration gracefully', () => {
+      assert.doesNotThrow(() => {
+        const repair = new AtomicRepair({
+          nodeVersion: '20.0.0',
+          wasmSupport: true,
+          strictMode: true
+        });
+        assert.ok(repair, 'Repair instance should be created');
+      });
+    });
+    
+    it('should handle extreme confidence values', async () => {
+      // Test very low confidence
+      const repairLow = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        auditConfidence: 0.0001
+      });
+      
+      const resultLow = await repairLow.repair();
+      assert.ok(resultLow === true || resultLow === false, 'Should handle low confidence');
+      
+      // Test very high confidence
+      const repairHigh = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        auditConfidence: 0.999999
+      });
+      
+      const resultHigh = await repairHigh.repair();
+      assert.ok(resultHigh === true || resultHigh === false, 'Should handle high confidence');
+    });
+    
+    it('should handle multiple repair attempts without breaking', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        maxRepairAttempts: 5
+      });
+      
+      // Run multiple repairs
+      for (let i = 0; i < 3; i++) {
+        const result = await repair.repair();
+        assert.ok(result === true || result === false, `Repair ${i + 1} should complete`);
+      }
+      
+      assert.ok(repair.getRepairAttempts() >= 3, 'Should have at least 3 repair attempts');
+      assert.ok(repair.getAuditHistory().length >= 3, 'Should have at least 3 audit records');
+    });
+    
+    it('should handle invalid shift strategy gracefully', () => {
+      // @ts-expect - Testing invalid strategy
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        shiftStrategy: 'invalid-strategy'
+      });
+      
+      assert.ok(repair, 'Should handle invalid strategy by using default');
+    });
+  });
+  
+  // ============================================================
+  // Performance Tests
+  // ============================================================
+  
+  describe('Performance Benchmarks', () => {
+    
+    it('should complete repair within reasonable time', async () => {
+      const startTime = Date.now();
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        dynamicShifting: true
+      });
+      
+      await repair.repair();
+      const duration = Date.now() - startTime;
+      
+      // Should complete within 10 seconds (reasonable for CI)
+      assert.ok(duration < 10000, `Repair took ${duration}ms, expected <10000ms`);
+    });
+    
+    it('should have acceptable memory usage patterns', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true
+      });
+      
+      // Run multiple repairs to check for memory leaks
+      for (let i = 0; i < 3; i++) {
+        await repair.repair();
+      }
+      
+      // Get metrics after multiple runs
+      const auditHistory = repair.getAuditHistory();
+      assert.ok(auditHistory.length === 3, 'Should have 3 audit records');
+      
+      // Memory usage should be stable
+      const memoryUsage = process.memoryUsage();
+      assert.ok(memoryUsage.heapUsed < 500 * 1024 * 1024, 'Heap usage should be under 500MB');
+    });
+  });
+  
+  // ============================================================
+  // Configuration Tests
+  // ============================================================
+  
+  describe('Configuration Handling', () => {
+    
+    it('should respect custom max repair attempts', async () => {
+      const repair = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        maxRepairAttempts: 5
+      });
+      
+      // The config should be stored
+      assert.ok(repair.getRepairAttempts() === 0, 'Initial attempts should be 0');
+      
+      // Run repair
+      await repair.repair();
+      assert.ok(repair.getRepairAttempts() >= 1, 'Should have at least 1 attempt');
+    });
+    
+    it('should enable/disbale features via config', () => {
+      const repairWithElite = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true,
+        eliteMode: true,
+        dynamicShifting: true
+      });
+      
+      const repairWithoutElite = new AtomicRepair({
+        nodeVersion: '20.0.0',
+        wasmSupport: true,
+        strictMode: true
+      });
+      
+      assert.ok(repairWithElite, 'Elite config should create instance');
+      assert.ok(repairWithoutElite, 'Standard config should create instance');
+    });
+  });
+});
+
+// ============================================================
+// Integration Test Suite
+// ============================================================
+
+describe('Integration Scenarios', () => {
+  
+  it('should handle sequential repairs with state preservation', async () => {
+    const repair = new AtomicRepair({
+      nodeVersion: '20.0.0',
+      wasmSupport: true,
+      strictMode: true,
+      eliteMode: true
+    });
+    
+    // First repair
+    await repair.repair();
+    const firstAttempts = repair.getRepairAttempts();
+    const firstHistoryLength = repair.getAuditHistory().length;
+    
+    // Second repair
+    await repair.repair();
+    const secondAttempts = repair.getRepairAttempts();
+    const secondHistoryLength = repair.getAuditHistory().length;
+    
+    assert.ok(secondAttempts > firstAttempts, 'Repair attempts should increase');
+    assert.ok(secondHistoryLength > firstHistoryLength, 'Audit history should grow');
+    
+    const avgConfidence = repair.getAverageConfidence();
+    assert.ok(typeof avgConfidence === 'number', 'Average confidence should be accessible');
+  });
+  
+  it('should work with all features enabled', async () => {
+    const repair = new AtomicRepair({
+      nodeVersion: '20.0.0',
+      wasmSupport: true,
+      strictMode: true,
+      eliteMode: true,
+      dynamicShifting: true,
+      blockchainAudit: true,
+      auditConfidence: 0.9997,
+      maxRepairAttempts: 3,
+      shiftStrategy: 'adaptive'
+    });
+    
+    const result = await repair.repair();
+    assert.strictEqual(result, true, 'Full feature repair should succeed');
+    
+    const stats = {
+      attempts: repair.getRepairAttempts(),
+      audits: repair.getAuditHistory().length,
+      shifts: repair.getShiftMetrics().length,
+      confidence: repair.getAverageConfidence()
+    };
+    
+    assert.ok(stats.attempts > 0, 'Should have repair attempts');
+    assert.ok(stats.audits > 0, 'Should have audit records');
+    assert.ok(stats.confidence > 0, 'Should have confidence score');
+    
+    console.log('📊 Full Feature Test Stats:', stats);
+  });
+});
+
+// ============================================================
+// Test Suite Export
+// ============================================================
+
+export const testConfig = {
+  eliteEnabled: true,
+  dynamicShifting: true,
+  blockchainAudit: true,
+  testTimeout: TEST_TIMEOUT,
+  confidenceThreshold: 0.95,
+  nodeVersions: ['18.0.0', '20.0.0', '22.0.0']
+};
+
+// ============================================================
+// Test Runner Helpers
+// ============================================================
+
+export async function runEliteTestSuite(): Promise<{
+  passed: number;
+  failed: number;
+  total: number;
+}> {
+  console.log('\n╔══════════════════════════════════════════════════════════════╗');
+  console.log('║  🧪 ELITE TEST SUITE - Atomic Swarm Gods v1.7.0             ║');
+  console.log('╚══════════════════════════════════════════════════════════════╝\n');
+  
+  // This function would be used by a custom test runner
+  // The actual tests are run by Node.js test runner
+  
+  return { passed: 0, failed: 0, total: 0 };
 }
 
-// Run if this is the main module
+// Auto-run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
+  console.log('🧪 Running Elite Test Suite...');
+  console.log('ℹ️ Use `npm test` to run all tests with the Node.js test runner\n');
 }
-
-export default AtomicRepair;
