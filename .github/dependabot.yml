@@ -1,0 +1,55 @@
+﻿
+.github/dependabot.yml - Automated dependency updates
+version: 2
+updates:
+
+GitHub Actions updates
+package-ecosystem: "github-actions"
+directory: "/"
+schedule:
+interval: "weekly"
+day: "monday"
+commit-message:
+prefix: "chore"
+include: "scope"
+labels:
+
+"dependencies"
+
+"security"
+reviewers:
+
+"SolanaRemix"
+
+npm dependencies
+package-ecosystem: "npm"
+directory: "/"
+schedule:
+interval: "daily"
+commit-message:
+prefix: "fix"
+prefix-development: "chore"
+include: "scope"
+labels:
+
+"dependencies"
+versioning-strategy: "auto"
+reviewers:
+
+"SolanaRemix"
+groups:
+production-dependencies:
+dependency-type: "production"
+development-dependencies:
+dependency-type: "development"
+
+Docker updates (if using Docker)
+package-ecosystem: "docker"
+directory: "/"
+schedule:
+interval: "weekly"
+labels:
+
+"dependencies"
+
+"docker"
