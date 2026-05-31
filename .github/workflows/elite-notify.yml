@@ -1,13 +1,13 @@
-name: "📢 Elite Notifications v1.7 - Enterprise Alert System"
+﻿name: "ðŸ“¢ Elite Notifications v1.7 - Enterprise Alert System"
 
 on:
   workflow_run:
     workflows: 
-      - "🚀 Atomic Node Elite - Production Enterprise"
-      - "🤖 Elite AI Agent v1.7 - Self-Healing Oracle"
-      - "🌐 Agentic Swarm WASM Repair (Dev) - Elite Edition"
-      - "📝 Elite Auto-Changelog & Blockchain Verification"
-      - "🎯 Elite Emoji Triggers v1.7"
+      - "ðŸš€ Atomic Node Elite - Production Enterprise"
+      - "ðŸ¤– Elite AI Agent v1.7 - Self-Healing Oracle"
+      - "ðŸŒ Agentic Swarm WASM Repair (Dev) - Elite Edition"
+      - "ðŸ“ Elite Auto-Changelog & Blockchain Verification"
+      - "ðŸŽ¯ Elite Emoji Triggers v1.7"
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -59,11 +59,11 @@ jobs:
       actions: read
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
       
-      - name: "📊 Generate Elite Enterprise Report"
+      - name: "ðŸ“Š Generate Elite Enterprise Report"
         id: report
         run: |
           WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
@@ -74,19 +74,19 @@ jobs:
           # Determine emoji based on status
           case "$WORKFLOW_STATUS" in
             success)
-              STATUS_EMOJI="✅"
+              STATUS_EMOJI="âœ…"
               STATUS_COLOR="green"
               ;;
             failure)
-              STATUS_EMOJI="❌"
+              STATUS_EMOJI="âŒ"
               STATUS_COLOR="red"
               ;;
             cancelled)
-              STATUS_EMOJI="⚠️"
+              STATUS_EMOJI="âš ï¸"
               STATUS_COLOR="yellow"
               ;;
             *)
-              STATUS_EMOJI="🔄"
+              STATUS_EMOJI="ðŸ”„"
               STATUS_COLOR="blue"
               ;;
           esac
@@ -102,7 +102,7 @@ jobs:
           cat > elite-notification.md << EOF
           ## $STATUS_EMOJI Elite Notification - v${{ env.ELITE_VERSION }}
           
-          ### 📊 Workflow Status
+          ### ðŸ“Š Workflow Status
           | Metric | Value |
           |--------|-------|
           | **Workflow** | $WORKFLOW_NAME |
@@ -111,11 +111,11 @@ jobs:
           | **Run ID** | ${{ github.event.workflow_run.id }} |
           | **Blockchain Hash** | \`${BLOCKCHAIN_HASH:0:32}...\` |
           
-          ### 🔗 Links
+          ### ðŸ”— Links
           - [View Run]($WORKFLOW_URL)
           - [Repository](${{ github.server_url }}/${{ github.repository }})
           
-          ### 📈 Elite Metrics
+          ### ðŸ“ˆ Elite Metrics
           - **Self-Healing Rate:** 92%
           - **Confidence:** 99.97%
           - **Dynamic Shifting:** Active
@@ -129,9 +129,9 @@ jobs:
           # Save for later steps
           echo "report_path=elite-notification.md" >> $GITHUB_OUTPUT
       
-      - name: "💬 Create GitHub Issue on Failure"
+      - name: "ðŸ’¬ Create GitHub Issue on Failure"
         if: github.event.workflow_run.conclusion == 'failure' && (github.event_name != 'workflow_dispatch' || contains(inputs.target_channel, 'github'))
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -156,7 +156,7 @@ jobs:
               );
               
               if (existingIssue) {
-                console.log(`⚠️ Similar issue #${existingIssue.number} already exists, skipping`);
+                console.log(`âš ï¸ Similar issue #${existingIssue.number} already exists, skipping`);
                 return;
               }
               
@@ -164,35 +164,35 @@ jobs:
               const issue = await github.rest.issues.create({
                 owner,
                 repo,
-                title: `🚨 Elite Alert: ${workflowName} failed - Action Required`,
-                body: `## 🔴 Critical Workflow Failure
+                title: `ðŸš¨ Elite Alert: ${workflowName} failed - Action Required`,
+                body: `## ðŸ”´ Critical Workflow Failure
                 
                 **Workflow:** ${workflowName}
-                **Status:** ❌ Failed
+                **Status:** âŒ Failed
                 **Time:** ${timestamp}
                 **Blockchain Hash:** \`${blockchainHash}\`
                 
-                ### 🔗 Details
+                ### ðŸ”— Details
                 [View Run](${workflowUrl})
                 
-                ### 🩹 Recommended Actions
+                ### ðŸ©¹ Recommended Actions
                 1. Check the workflow logs for errors
                 2. Run \`@repairFull\` to trigger auto-repair
                 3. Review recent changes that may have caused the failure
                 
-                ### ⛓️ Audit Trail
+                ### â›“ï¸ Audit Trail
                 This alert has been recorded in the elite blockchain audit system.
                 
                 ---
                 *Auto-generated by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`,
                 labels: ['elite-alert', 'bug', 'critical']
               });
-              console.log(`✅ Elite alert issue #${issue.data.number} created`);
+              console.log(`âœ… Elite alert issue #${issue.data.number} created`);
             } catch (error) {
-              console.log(`⚠️ Could not create issue: ${error.message}`);
+              console.log(`âš ï¸ Could not create issue: ${error.message}`);
             }
       
-      - name: "📢 Send Slack Notification"
+      - name: "ðŸ“¢ Send Slack Notification"
         if: (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'workflow_dispatch' || contains(inputs.target_channel, 'slack'))
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -225,12 +225,12 @@ jobs:
               }" \
               $SLACK_WEBHOOK || true
               
-            echo "✅ Slack notification sent"
+            echo "âœ… Slack notification sent"
           else
-            echo "ℹ️ SLACK_WEBHOOK_URL not configured, skipping Slack notification"
+            echo "â„¹ï¸ SLACK_WEBHOOK_URL not configured, skipping Slack notification"
           fi
       
-      - name: "💬 Send Discord Notification"
+      - name: "ðŸ’¬ Send Discord Notification"
         if: (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'workflow_dispatch' || contains(inputs.target_channel, 'discord'))
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -252,12 +252,12 @@ jobs:
               }" \
               $DISCORD_WEBHOOK || true
               
-            echo "✅ Discord notification sent"
+            echo "âœ… Discord notification sent"
           else
-            echo "ℹ️ DISCORD_WEBHOOK_URL not configured, skipping Discord notification"
+            echo "â„¹ï¸ DISCORD_WEBHOOK_URL not configured, skipping Discord notification"
           fi
       
-      - name: "📊 Update Dashboard Metrics"
+      - name: "ðŸ“Š Update Dashboard Metrics"
         run: |
           mkdir -p docs/dashboard
           
@@ -277,11 +277,11 @@ jobs:
           }
           EOF
           
-          echo "✅ Dashboard metrics updated"
+          echo "âœ… Dashboard metrics updated"
       
-      - name: "🏷️ Create Issue Comment on PR (if applicable)"
+      - name: "ðŸ·ï¸ Create Issue Comment on PR (if applicable)"
         if: github.event.workflow_run.pull_requests != null && github.event.workflow_run.pull_requests[0] != null
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -290,7 +290,7 @@ jobs:
             const workflowName = '${{ github.event.workflow_run.name }}';
             const blockchainHash = '${{ steps.report.outputs.blockchain_hash }}';
             
-            const emoji = status === 'success' ? '✅' : '❌';
+            const emoji = status === 'success' ? 'âœ…' : 'âŒ';
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -300,10 +300,10 @@ jobs:
                      `**Workflow:** ${workflowName}\n` +
                      `**Status:** ${status}\n` +
                      `**Blockchain Hash:** \`${blockchainHash}\`\n\n` +
-                     `🤖 *Auto-reported by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`
+                     `ðŸ¤– *Auto-reported by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`
             });
             
-            console.log(`✅ Comment added to PR #${prNumber}`)
+            console.log(`âœ… Comment added to PR #${prNumber}`)
 
   # Optional: Collect and report metrics
   metrics-collector:
@@ -311,7 +311,7 @@ jobs:
     needs: elite-notify
     if: always() && github.event.workflow_run.conclusion == 'failure'
     steps:
-      - name: "📊 Collect Failure Metrics"
+      - name: "ðŸ“Š Collect Failure Metrics"
         run: |
           mkdir -p .elite-metrics
           
@@ -327,14 +327,14 @@ jobs:
           
           # Calculate failure rate
           FAILURE_COUNT=$(jq -s 'length' .elite-metrics/failures.log 2>/dev/null || echo "0")
-          echo "📊 Total failures recorded: $FAILURE_COUNT"
+          echo "ðŸ“Š Total failures recorded: $FAILURE_COUNT"
           
           if [ $FAILURE_COUNT -gt 10 ]; then
-            echo "⚠️ High failure rate detected - consider manual review"
+            echo "âš ï¸ High failure rate detected - consider manual review"
           fi
       
-      - name: "📈 Update Performance Dashboard"
-        uses: actions/github-script@v7
+      - name: "ðŸ“ˆ Update Performance Dashboard"
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -356,6 +356,6 @@ jobs:
                 owner,
                 repo,
                 issue_number: perfIssue.number,
-                body: `## 📊 Elite Performance Dashboard\n\n**Last Updated:** ${new Date().toUTCString()}\n**Status:** Monitoring active\n**Blockchain Verified:** ✅`
+                body: `## ðŸ“Š Elite Performance Dashboard\n\n**Last Updated:** ${new Date().toUTCString()}\n**Status:** Monitoring active\n**Blockchain Verified:** âœ…`
               });
             }

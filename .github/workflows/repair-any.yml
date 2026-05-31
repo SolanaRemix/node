@@ -1,4 +1,4 @@
-name: "⚡ Universal Auto-Repair Elite v1.7"
+﻿name: "âš¡ Universal Auto-Repair Elite v1.7"
 
 on:
   pull_request:
@@ -45,27 +45,27 @@ jobs:
       has_go_mod: ${{ steps.detect.outputs.has_go_mod }}
       
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
       
-      - name: "🔍 Smart Language Detection"
+      - name: "ðŸ” Smart Language Detection"
         id: detect
         run: |
-          echo "🔍 Scanning repository for language patterns..."
+          echo "ðŸ” Scanning repository for language patterns..."
           
           # Node.js / TypeScript
           if [ -f "package.json" ]; then
             echo "has_package_json=true" >> $GITHUB_OUTPUT
             echo "language=node" >> $GITHUB_OUTPUT
-            echo "📦 Detected: Node.js/TypeScript"
+            echo "ðŸ“¦ Detected: Node.js/TypeScript"
           fi
           
           # Rust
           if [ -f "Cargo.toml" ]; then
             echo "has_cargo=true" >> $GITHUB_OUTPUT
             echo "language=rust" >> $GITHUB_OUTPUT
-            echo "🦀 Detected: Rust"
+            echo "ðŸ¦€ Detected: Rust"
           fi
           
           # Python
@@ -74,7 +74,7 @@ jobs:
             if [ -z "${{ steps.detect.outputs.language }}" ]; then
               echo "language=python" >> $GITHUB_OUTPUT
             fi
-            echo "🐍 Detected: Python"
+            echo "ðŸ Detected: Python"
           fi
           
           # Go
@@ -83,13 +83,13 @@ jobs:
             if [ -z "${{ steps.detect.outputs.language }}" ]; then
               echo "language=golang" >> $GITHUB_OUTPUT
             fi
-            echo "🐹 Detected: Go"
+            echo "ðŸ¹ Detected: Go"
           fi
           
           # Default fallback
           if [ -z "${{ steps.detect.outputs.language }}" ]; then
             echo "language=unknown" >> $GITHUB_OUTPUT
-            echo "⚠️ No known language detected"
+            echo "âš ï¸ No known language detected"
           fi
 
   universal-repair:
@@ -101,19 +101,19 @@ jobs:
       fail-fast: false
       
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
       
-      - name: "🔧 Setup Environment"
-        uses: actions/setup-node@v4
+      - name: "ðŸ”§ Setup Environment"
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: ${{ matrix.node }}.x
           cache: 'npm'
       
-      - name: "📦 Setup Package Manager"
+      - name: "ðŸ“¦ Setup Package Manager"
         run: |
           # Detect and use appropriate package manager
           if [ -f "pnpm-lock.yaml" ]; then
@@ -126,11 +126,11 @@ jobs:
             echo "PACKAGE_MANAGER=npm" >> $GITHUB_ENV
           fi
       
-      - name: "⚡ Elite Auto-Repair Execution"
+      - name: "âš¡ Elite Auto-Repair Execution"
         run: |
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║  ⚡ UNIVERSAL AUTO-REPAIR ELITE v${{ env.ELITE_VERSION }}            ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+          echo "â•‘  âš¡ UNIVERSAL AUTO-REPAIR ELITE v${{ env.ELITE_VERSION }}            â•‘"
+          echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
           
           git config user.name "Elite Universal Agent v${{ env.ELITE_VERSION }}"
           git config user.email "universal-agent@atomic-swarm-gods.dev"
@@ -138,8 +138,8 @@ jobs:
           REPAIR_MODE="${{ inputs.repair_mode || 'full' }}"
           DETECTED_LANG="${{ needs.detect-language.outputs.primary_lang }}"
           
-          echo "📊 Repair Mode: $REPAIR_MODE"
-          echo "🌐 Detected Language: $DETECTED_LANG"
+          echo "ðŸ“Š Repair Mode: $REPAIR_MODE"
+          echo "ðŸŒ Detected Language: $DETECTED_LANG"
           
           # ============================================================
           # LANGUAGE-SPECIFIC REPAIRS
@@ -148,7 +148,7 @@ jobs:
           # Node.js / TypeScript Repair
           if [ "$DETECTED_LANG" = "node" ] || [ -f "package.json" ]; then
             echo ""
-            echo "📦 Running Node.js/TypeScript repairs..."
+            echo "ðŸ“¦ Running Node.js/TypeScript repairs..."
             
             # Install dependencies with appropriate package manager
             case "$PACKAGE_MANAGER" in
@@ -165,27 +165,27 @@ jobs:
             
             # Security audit and fixes
             if [ "$REPAIR_MODE" = "security" ] || [ "$REPAIR_MODE" = "full" ]; then
-              echo "🔒 Running security audit..."
+              echo "ðŸ”’ Running security audit..."
               npm audit fix --force || true
             fi
             
             # TypeScript fixes
             if [ -f "tsconfig.json" ]; then
-              echo "🔧 Running TypeScript strict fixes..."
+              echo "ðŸ”§ Running TypeScript strict fixes..."
               npx tsc --noEmit --strict --skipLibCheck || true
               
               # Auto-fix common TypeScript issues
               if ! grep -q '"strict": true' tsconfig.json; then
-                echo "📝 Enabling TypeScript strict mode..."
+                echo "ðŸ“ Enabling TypeScript strict mode..."
                 npx json -I -f tsconfig.json -e 'this.compilerOptions.strict=true'
               fi
             fi
             
             # Build project
             if [ "$REPAIR_MODE" = "full" ] || [ "$REPAIR_MODE" = "performance" ]; then
-              echo "🔨 Building project..."
+              echo "ðŸ”¨ Building project..."
               npm run build || {
-                echo "⚠️ Build failed - attempting repairs..."
+                echo "âš ï¸ Build failed - attempting repairs..."
                 npm install --force
                 npm run build || echo "Build issues logged"
               }
@@ -193,13 +193,13 @@ jobs:
             
             # Run tests
             if [ "$REPAIR_MODE" = "test" ] || [ "$REPAIR_MODE" = "full" ]; then
-              echo "🧪 Running tests..."
+              echo "ðŸ§ª Running tests..."
               npm test || echo "Test issues detected - continuing repair"
             fi
             
             # Lint fixes
             if [ "$REPAIR_MODE" = "lint" ] || [ "$REPAIR_MODE" = "full" ]; then
-              echo "✨ Running linter fixes..."
+              echo "âœ¨ Running linter fixes..."
               npm run lint -- --fix || npx eslint . --fix || true
               npm run format || npx prettier --write . || true
             fi
@@ -210,7 +210,7 @@ jobs:
           # ============================================================
           if [ "$DETECTED_LANG" = "python" ] || [ -f "requirements.txt" ]; then
             echo ""
-            echo "🐍 Running Python repairs..."
+            echo "ðŸ Running Python repairs..."
             
             # Install dependencies
             pip install -r requirements.txt || pip install black isort flake8
@@ -228,7 +228,7 @@ jobs:
           # ============================================================
           if [ "$DETECTED_LANG" = "rust" ] || [ -f "Cargo.toml" ]; then
             echo ""
-            echo "🦀 Running Rust repairs..."
+            echo "ðŸ¦€ Running Rust repairs..."
             
             # Update and format
             rustup update
@@ -243,7 +243,7 @@ jobs:
           # ============================================================
           if [ "$DETECTED_LANG" = "golang" ] || [ -f "go.mod" ]; then
             echo ""
-            echo "🐹 Running Go repairs..."
+            echo "ðŸ¹ Running Go repairs..."
             
             go mod tidy
             go fmt ./...
@@ -254,7 +254,7 @@ jobs:
           # UNIVERSAL REPAIRS (Any Language)
           # ============================================================
           echo ""
-          echo "🌐 Running universal repairs..."
+          echo "ðŸŒ Running universal repairs..."
           
           # Fix line endings
           find . -name "*.js" -o -name "*.ts" -o -name "*.json" -o -name "*.yml" -o -name "*.yaml" | \
@@ -269,9 +269,9 @@ jobs:
             while read file; do tail -c1 "$file" | read -r _ || echo >> "$file"; done 2>/dev/null || true
           
           echo ""
-          echo "✅ Universal repairs completed"
+          echo "âœ… Universal repairs completed"
       
-      - name: "⛓️ Generate Blockchain Audit Hash"
+      - name: "â›“ï¸ Generate Blockchain Audit Hash"
         id: blockchain
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -286,9 +286,9 @@ jobs:
           mkdir -p blockchain/
           echo "{\"timestamp\":\"$TIMESTAMP\",\"type\":\"universal-repair\",\"block_hash\":\"$BLOCKCHAIN_HASH\",\"run_id\":${{ github.run_id }}}" >> blockchain/universal-repair.json
           
-          echo "⛓️ Blockchain hash: ${BLOCKCHAIN_HASH:0:32}..."
+          echo "â›“ï¸ Blockchain hash: ${BLOCKCHAIN_HASH:0:32}..."
       
-      - name: "📝 Commit and Push Repairs"
+      - name: "ðŸ“ Commit and Push Repairs"
         run: |
           git add . 2>/dev/null || true
           git add blockchain/ 2>/dev/null || true
@@ -298,48 +298,48 @@ jobs:
             DETECTED_LANG="${{ needs.detect-language.outputs.primary_lang }}"
             REPAIR_MODE="${{ inputs.repair_mode || 'full' }}"
             
-            git commit -m "⚡ Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}
+            git commit -m "âš¡ Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}
             
-            🌐 Language: ${DETECTED_LANG:-auto}
-            🔧 Mode: $REPAIR_MODE
-            ⛓️ Blockchain: ${BLOCKCHAIN_HASH:0:16}...
+            ðŸŒ Language: ${DETECTED_LANG:-auto}
+            ðŸ”§ Mode: $REPAIR_MODE
+            â›“ï¸ Blockchain: ${BLOCKCHAIN_HASH:0:16}...
             
-            🔧 Fixes applied:
+            ðŸ”§ Fixes applied:
             - Dependencies updated and locked
             - Code formatting standardized
             - TypeScript strict mode enforced
             - Security vulnerabilities patched
             - Tests verified
             
-            🤖 Auto-repair by Atomic Swarm Gods Elite Universal Agent"
+            ðŸ¤– Auto-repair by Atomic Swarm Gods Elite Universal Agent"
             
             git push origin ${{ github.head_ref || github.ref_name }} || true
-            echo "✅ Changes committed and pushed"
+            echo "âœ… Changes committed and pushed"
           else
-            echo "ℹ️ No repairs needed - repository is healthy"
+            echo "â„¹ï¸ No repairs needed - repository is healthy"
           fi
       
-      - name: "💬 Post-Repair Comment"
+      - name: "ðŸ’¬ Post-Repair Comment"
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const blockchainHash = '${{ steps.blockchain.outputs.hash }}';
             const detectedLang = '${{ needs.detect-language.outputs.primary_lang }}';
             const repairMode = '${{ inputs.repair_mode || "full" }}';
             
-            let commentBody = `## ⚡ Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}\n\n`;
+            let commentBody = `## âš¡ Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}\n\n`;
             commentBody += `| Metric | Value |\n|--------|-------|\n`;
             commentBody += `| **Language** | ${detectedLang || 'auto-detected'} |\n`;
             commentBody += `| **Repair Mode** | ${repairMode} |\n`;
             commentBody += `| **Blockchain Hash** | \`${blockchainHash?.substring(0, 16)}...\` |\n\n`;
-            commentBody += `### ✅ Applied Repairs\n`;
-            commentBody += `- 🔧 Dependencies installed and locked\n`;
-            commentBody += `- 📝 Code formatting standardized\n`;
-            commentBody += `- 🔒 Security vulnerabilities patched\n`;
-            commentBody += `- 🧪 Tests verified\n\n`;
+            commentBody += `### âœ… Applied Repairs\n`;
+            commentBody += `- ðŸ”§ Dependencies installed and locked\n`;
+            commentBody += `- ðŸ“ Code formatting standardized\n`;
+            commentBody += `- ðŸ”’ Security vulnerabilities patched\n`;
+            commentBody += `- ðŸ§ª Tests verified\n\n`;
             commentBody += `---\n`;
-            commentBody += `🤖 *Auto-repair performed by Atomic Swarm Gods Elite Universal Agent*`;
+            commentBody += `ðŸ¤– *Auto-repair performed by Atomic Swarm Gods Elite Universal Agent*`;
             
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -348,9 +348,9 @@ jobs:
               body: commentBody
             });
       
-      - name: "📊 Update PR Status Check"
+      - name: "ðŸ“Š Update PR Status Check"
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             await github.rest.checks.create({
@@ -375,7 +375,7 @@ jobs:
     needs: universal-repair
     if: always()
     steps:
-      - name: "📊 Update Repair Metrics"
+      - name: "ðŸ“Š Update Repair Metrics"
         run: |
           mkdir -p .repair-metrics
           
@@ -389,4 +389,4 @@ jobs:
           }
           EOF
           
-          echo "📊 Repair metrics recorded"
+          echo "ðŸ“Š Repair metrics recorded"

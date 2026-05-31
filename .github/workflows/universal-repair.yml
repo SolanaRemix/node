@@ -1,4 +1,4 @@
-name: "🌐 Universal Auto-Repair Elite v1.7"
+﻿name: "ðŸŒ Universal Auto-Repair Elite v1.7"
 
 on:
   workflow_dispatch:
@@ -74,14 +74,14 @@ jobs:
       test_count: ${{ steps.detect.outputs.test_count }}
       
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
       
-      - name: "🔍 Elite Context Detection"
+      - name: "ðŸ” Elite Context Detection"
         id: detect
         run: |
-          echo "🔍 Scanning repository for elite intelligence..."
+          echo "ðŸ” Scanning repository for elite intelligence..."
           
           # Package detection
           [ -f "package.json" ] && echo "has_package_json=true" >> $GITHUB_OUTPUT
@@ -111,10 +111,10 @@ jobs:
             echo "language=unknown" >> $GITHUB_OUTPUT
           fi
           
-          echo "📊 Detection Results:"
-          echo "  🌐 Language: ${{ steps.detect.outputs.language }}"
-          echo "  🦀 WASM: $([ $WASM_COUNT -gt 0 ] && echo "Yes ($WASM_COUNT)" || echo "No")"
-          echo "  🧪 Tests: $TEST_COUNT"
+          echo "ðŸ“Š Detection Results:"
+          echo "  ðŸŒ Language: ${{ steps.detect.outputs.language }}"
+          echo "  ðŸ¦€ WASM: $([ $WASM_COUNT -gt 0 ] && echo "Yes ($WASM_COUNT)" || echo "No")"
+          echo "  ðŸ§ª Tests: $TEST_COUNT"
 
   # ============================================================
   # PHASE 2: Universal Elite Repair
@@ -128,27 +128,27 @@ jobs:
       fail-fast: false
       
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: ${{ matrix.node }}.x
           cache: 'npm'
       
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v3.0.0
         with:
           version: 8
       
-      - name: "⚡ Elite Universal Repair Engine"
+      - name: "âš¡ Elite Universal Repair Engine"
         id: repair
         run: |
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║  🌐 UNIVERSAL AUTO-REPAIR ELITE v${{ env.ELITE_VERSION }}           ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+          echo "â•‘  ðŸŒ UNIVERSAL AUTO-REPAIR ELITE v${{ env.ELITE_VERSION }}           â•‘"
+          echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
           
           # Configuration
           REPAIR_MODE="${{ inputs.repair_mode || 'full' }}"
@@ -158,16 +158,16 @@ jobs:
           git config user.name "Elite Universal Agent v${{ env.ELITE_VERSION }}"
           git config user.email "universal@atomic-swarm-gods.dev"
           
-          echo "📊 Repair Mode: $REPAIR_MODE"
-          echo "🌐 Detected Language: $DETECTED_LANG"
-          echo "🔄 Shift Strategy: $SHIFT_STRATEGY"
+          echo "ðŸ“Š Repair Mode: $REPAIR_MODE"
+          echo "ðŸŒ Detected Language: $DETECTED_LANG"
+          echo "ðŸ”„ Shift Strategy: $SHIFT_STRATEGY"
           echo ""
           
           # ============================================================
           # DEPENDENCY INSTALLATION
           # ============================================================
           if [ "$REPAIR_MODE" != "clean" ]; then
-            echo "📦 Installing dependencies..."
+            echo "ðŸ“¦ Installing dependencies..."
             if [ -f "pnpm-lock.yaml" ]; then
               pnpm install --frozen-lockfile || pnpm install
             elif [ -f "yarn.lock" ]; then
@@ -182,8 +182,8 @@ jobs:
           # ============================================================
           if [ "$REPAIR_MODE" = "security" ] || [ "$REPAIR_MODE" = "full" ]; then
             echo ""
-            echo "🔒 Running elite security audit..."
-            npm audit --json > security-audit.json 2>/dev/null || echo "⚠️ Security audit completed"
+            echo "ðŸ”’ Running elite security audit..."
+            npm audit --json > security-audit.json 2>/dev/null || echo "âš ï¸ Security audit completed"
             npm audit fix --force || true
           fi
           
@@ -192,23 +192,23 @@ jobs:
           # ============================================================
           if [ "$REPAIR_MODE" = "full" ] || [ "$REPAIR_MODE" = "test" ]; then
             echo ""
-            echo "🔄 Applying dynamic test shifting: $SHIFT_STRATEGY"
+            echo "ðŸ”„ Applying dynamic test shifting: $SHIFT_STRATEGY"
             
             TEST_COUNT=${{ needs.detect-context.outputs.test_count }}
-            echo "📊 Tests detected: $TEST_COUNT"
+            echo "ðŸ“Š Tests detected: $TEST_COUNT"
             
             case "$SHIFT_STRATEGY" in
               chaos)
-                echo "🌀 Chaos mode: Randomizing test execution"
+                echo "ðŸŒ€ Chaos mode: Randomizing test execution"
                 ;;
               predictive)
-                echo "🤖 Predictive mode: ML-optimized test order"
+                echo "ðŸ¤– Predictive mode: ML-optimized test order"
                 ;;
               weighted)
-                echo "⚖️ Weighted mode: Critical tests prioritized"
+                echo "âš–ï¸ Weighted mode: Critical tests prioritized"
                 ;;
               adaptive|*)
-                echo "🎯 Adaptive mode: Auto-selecting optimal strategy"
+                echo "ðŸŽ¯ Adaptive mode: Auto-selecting optimal strategy"
                 ;;
             esac
           fi
@@ -218,12 +218,12 @@ jobs:
           # ============================================================
           if [ "$DETECTED_LANG" = "node" ] && [ -f "tsconfig.json" ]; then
             echo ""
-            echo "🔒 Enforcing TypeScript strict mode..."
+            echo "ðŸ”’ Enforcing TypeScript strict mode..."
             
             # Enable strict mode if not present
             if ! grep -q '"strict": true' tsconfig.json; then
               npx json -I -f tsconfig.json -e 'this.compilerOptions.strict=true' 2>/dev/null || true
-              echo "  ✅ Strict mode enabled"
+              echo "  âœ… Strict mode enabled"
             fi
             
             # Run type check
@@ -235,11 +235,11 @@ jobs:
           # ============================================================
           if [ "${{ needs.detect-context.outputs.has_wasm }}" = "true" ] && [ "$REPAIR_MODE" = "wasm-optimize" -o "$REPAIR_MODE" = "full" ]; then
             echo ""
-            echo "🦀 Optimizing WASM modules..."
+            echo "ðŸ¦€ Optimizing WASM modules..."
             
             find . -name "*.wasm" -type f 2>/dev/null | while read -r module; do
               SIZE=$(stat -c%s "$module" 2>/dev/null || stat -f%z "$module" 2>/dev/null || echo "0")
-              echo "  📦 $(basename "$module"): ${SIZE} bytes"
+              echo "  ðŸ“¦ $(basename "$module"): ${SIZE} bytes"
             done
           fi
           
@@ -248,14 +248,14 @@ jobs:
           # ============================================================
           if [ "$REPAIR_MODE" = "build" ] || [ "$REPAIR_MODE" = "full" ]; then
             echo ""
-            echo "🔨 Running build..."
+            echo "ðŸ”¨ Running build..."
             
             if npm run 2>/dev/null | grep -q "build"; then
-              npm run build 2>&1 || echo "⚠️ Build completed with warnings"
+              npm run build 2>&1 || echo "âš ï¸ Build completed with warnings"
             else
               # Try direct TypeScript compilation
               if [ -f "tsconfig.json" ]; then
-                npx tsc 2>&1 || echo "⚠️ TypeScript compilation completed"
+                npx tsc 2>&1 || echo "âš ï¸ TypeScript compilation completed"
               fi
             fi
           fi
@@ -265,14 +265,14 @@ jobs:
           # ============================================================
           if [ "$REPAIR_MODE" = "test" ] || [ "$REPAIR_MODE" = "full" ]; then
             echo ""
-            echo "🧪 Running tests..."
+            echo "ðŸ§ª Running tests..."
             
             if npm run 2>/dev/null | grep -q "test"; then
-              npm test 2>&1 || echo "⚠️ Tests completed with issues"
+              npm test 2>&1 || echo "âš ï¸ Tests completed with issues"
             else
               # Try native Node test runner
               if [ -d "test" ] || [ -d "__tests__" ]; then
-                node --test 2>&1 || echo "⚠️ Test execution completed"
+                node --test 2>&1 || echo "âš ï¸ Test execution completed"
               fi
             fi
           fi
@@ -282,19 +282,19 @@ jobs:
           # ============================================================
           if [ "$REPAIR_MODE" = "lint" ] || [ "$REPAIR_MODE" = "full" ]; then
             echo ""
-            echo "✨ Running linter and formatter..."
+            echo "âœ¨ Running linter and formatter..."
             
             npm run lint -- --fix 2>/dev/null || npx eslint . --fix --quiet 2>/dev/null || true
             npm run format 2>/dev/null || npx prettier --write . --loglevel silent 2>/dev/null || true
           fi
           
           echo ""
-          echo "✅ Elite universal repair sequence complete"
+          echo "âœ… Elite universal repair sequence complete"
       
       # ============================================================
       # BLOCKCHAIN AUDIT TRAIL
       # ============================================================
-      - name: "⛓️ Blockchain Audit Trail"
+      - name: "â›“ï¸ Blockchain Audit Trail"
         id: blockchain
         if: inputs.blockchain_audit != false
         run: |
@@ -312,12 +312,12 @@ jobs:
           mkdir -p blockchain/
           echo "{\"timestamp\":\"$TIMESTAMP\",\"type\":\"universal-repair\",\"mode\":\"$REPAIR_MODE\",\"block_hash\":\"$BLOCKCHAIN_HASH\",\"run_id\":${{ github.run_id }}}" >> blockchain/universal-repair.json
           
-          echo "⛓️ Blockchain hash: ${BLOCKCHAIN_HASH:0:32}..."
+          echo "â›“ï¸ Blockchain hash: ${BLOCKCHAIN_HASH:0:32}..."
       
       # ============================================================
       # COMMIT AND PUSH
       # ============================================================
-      - name: "📝 Commit Universal Repairs"
+      - name: "ðŸ“ Commit Universal Repairs"
         run: |
           git add . 2>/dev/null || true
           git add blockchain/ 2>/dev/null || true
@@ -328,27 +328,27 @@ jobs:
             DETECTED_LANG="${{ needs.detect-context.outputs.primary_lang }}"
             TEST_COUNT="${{ needs.detect-context.outputs.test_count }}"
             
-            git commit -m "🌐 Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}
+            git commit -m "ðŸŒ Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}
             
-            🔧 Mode: $REPAIR_MODE
-            🌐 Language: ${DETECTED_LANG:-auto}
-            🧪 Tests: $TEST_COUNT
-            ⛓️ Blockchain: ${BLOCKCHAIN_HASH:-none}
+            ðŸ”§ Mode: $REPAIR_MODE
+            ðŸŒ Language: ${DETECTED_LANG:-auto}
+            ðŸ§ª Tests: $TEST_COUNT
+            â›“ï¸ Blockchain: ${BLOCKCHAIN_HASH:-none}
             
-            🤖 Auto-repair by Atomic Swarm Gods Elite Universal Agent"
+            ðŸ¤– Auto-repair by Atomic Swarm Gods Elite Universal Agent"
             
             git push origin HEAD:${{ github.head_ref || github.ref_name }} || true
-            echo "✅ Changes committed and pushed"
+            echo "âœ… Changes committed and pushed"
           else
-            echo "ℹ️ No repairs needed - repository is healthy"
+            echo "â„¹ï¸ No repairs needed - repository is healthy"
           fi
       
       # ============================================================
       # PR COMMENT
       # ============================================================
-      - name: "💬 PR Comment"
+      - name: "ðŸ’¬ PR Comment"
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const blockchainHash = '${{ steps.blockchain.outputs.hash }}';
@@ -357,21 +357,21 @@ jobs:
             const testCount = ${{ needs.detect-context.outputs.test_count }};
             const hasWasm = '${{ needs.detect-context.outputs.has_wasm }}';
             
-            let commentBody = `## 🌐 Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}\n\n`;
+            let commentBody = `## ðŸŒ Universal Auto-Repair Elite v${{ env.ELITE_VERSION }}\n\n`;
             commentBody += `| Metric | Value |\n|--------|-------|\n`;
             commentBody += `| **Language** | ${detectedLang || 'auto-detected'} |\n`;
             commentBody += `| **Repair Mode** | ${repairMode} |\n`;
             commentBody += `| **Tests** | ${testCount} |\n`;
-            commentBody += `| **WASM** | ${hasWasm === 'true' ? '✅ Detected' : '❌'} |\n`;
+            commentBody += `| **WASM** | ${hasWasm === 'true' ? 'âœ… Detected' : 'âŒ'} |\n`;
             commentBody += `| **Blockchain Hash** | \`${blockchainHash?.substring(0, 16)}...\` |\n\n`;
-            commentBody += `### ✅ Elite Actions Completed\n`;
-            commentBody += `- 🔧 Dependencies installed and locked\n`;
-            commentBody += `- 📝 Code formatting standardized\n`;
-            commentBody += `- 🔒 Security vulnerabilities patched\n`;
-            commentBody += `- 🧪 Tests executed\n`;
-            commentBody += `- ⛓️ Blockchain audit recorded\n\n`;
+            commentBody += `### âœ… Elite Actions Completed\n`;
+            commentBody += `- ðŸ”§ Dependencies installed and locked\n`;
+            commentBody += `- ðŸ“ Code formatting standardized\n`;
+            commentBody += `- ðŸ”’ Security vulnerabilities patched\n`;
+            commentBody += `- ðŸ§ª Tests executed\n`;
+            commentBody += `- â›“ï¸ Blockchain audit recorded\n\n`;
             commentBody += `---\n`;
-            commentBody += `🤖 *Auto-repair by Atomic Swarm Gods Elite Universal Agent*`;
+            commentBody += `ðŸ¤– *Auto-repair by Atomic Swarm Gods Elite Universal Agent*`;
             
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -383,9 +383,9 @@ jobs:
       # ============================================================
       # STATUS CHECK
       # ============================================================
-      - name: "✅ Status Check"
+      - name: "âœ… Status Check"
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             await github.rest.checks.create({
@@ -410,7 +410,7 @@ jobs:
     needs: [detect-context, universal-repair]
     if: always()
     steps:
-      - name: "📊 Universal Repair Analytics"
+      - name: "ðŸ“Š Universal Repair Analytics"
         run: |
           mkdir -p .repair-metrics
           
@@ -426,10 +426,10 @@ jobs:
           }
           EOF
           
-          echo "📊 Universal repair metrics recorded"
+          echo "ðŸ“Š Universal repair metrics recorded"
           
           # Summary output
-          echo "## 📊 Universal Auto-Repair Elite - Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## ðŸ“Š Universal Auto-Repair Elite - Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -437,4 +437,4 @@ jobs:
           echo "| **Repair Mode** | ${{ inputs.repair_mode || 'full' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Tests Found** | ${{ needs.detect-context.outputs.test_count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **WASM Modules** | ${{ needs.detect-context.outputs.has_wasm == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Status** | ✅ Elite Complete |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | âœ… Elite Complete |" >> $GITHUB_STEP_SUMMARY
