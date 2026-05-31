@@ -1,4 +1,4 @@
-﻿export class OracleMemory {
+export class OracleMemory {
   private memory: Map<string, any[]> = new Map();
   
   learn(repo: string, issue: string, fix: string, language: string): void {
