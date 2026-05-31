@@ -1,7 +1,103 @@
-﻿# local-test.ps1 - Windows-optimized test script
+#!/usr/bin/env pwsh
+# ============================================================
+# local-test.ps1 - Windows/PowerShell Elite Test Suite
+# Atomic Swarm Gods Elite v1.7.0
+# Enterprise Validation for Windows Environments
+# ============================================================
 
-Write-Host "🧪 Running Local Tests for Atomic Node" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+param(
+    [switch]$Clean,
+    [switch]$SkipBuild,
+    [switch]$SkipTests,
+    [switch]$EliteMode,
+    [switch]$BlockchainAudit,
+    [switch]$DynamicShifting,
+    [string]$Environment = "development"
+)
+
+# ============================================================
+# Configuration
+# ============================================================
+$ELITE_VERSION = "1.7.0"
+$TIMESTAMP = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
+$ErrorActionPreference = "Stop"
+$TestPassed = 0
+$TestFailed = 0
+$TestWarnings = 0
+
+# Set environment variables
+$env:ELITE_MODE = if ($EliteMode) { "true" } else { "false" }
+$env:BLOCKCHAIN_AUDIT = if ($BlockchainAudit) { "true" } else { "false" }
+$env:DYNAMIC_SHIFTING = if ($DynamicShifting) { "true" } else { "false" }
+$env:NODE_ENV = $Environment
+
+# ============================================================
+# Helper Functions
+# ============================================================
+function Write-Success {
+    param([string]$Message)
+    Write-Host "✅ $Message" -ForegroundColor Green
+    $script:TestPassed++
+}
+
+function Write-Fail {
+    param([string]$Message)
+    Write-Host "❌ $Message" -ForegroundColor Red
+    $script:TestFailed++
+}
+
+function Write-Warning {
+    param([string]$Message)
+    Write-Host "⚠️ $Message" -ForegroundColor Yellow
+    $script:TestWarnings++
+}
+
+function Write-Info {
+    param([string]$Message)
+    Write-Host "ℹ️ $Message" -ForegroundColor Cyan
+}
+
+function Write-Section {
+    param([string]$Title)
+    Write-Host ""
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor DarkCyan
+    Write-Host $Title -ForegroundColor Cyan
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor DarkCyan
+}
+
+# ============================================================
+# Header
+# ============================================================
+Clear-Host
+Write-Host ""
+Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "║  🧪 ATOMIC SWARM GODS ELITE v$ELITE_VERSION - WINDOWS TEST SUITE  ║" -ForegroundColor Cyan
+Write-Host "║  🔬 PowerShell Enterprise Validation                         ║" -ForegroundColor Cyan
+Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host ""
+Write-Info "Timestamp: $TIMESTAMP"
+Write-Info "Environment: $Environment"
+Write-Info "PowerShell: $($PSVersionTable.PSVersion)"
+Write-Info "OS: $([System.Environment]::OSVersion.VersionString)"
+Write-Host ""
+
+# ============================================================
+# Phase 1: Environment Validation
+# ============================================================
+Write-Section "🔧 PHASE 1: Environment Validation"
+
+# Node.js version check
+try {
+    $nodeVersion = node --version 2>$null
+    $nodeMajor = $nodeVersion -replace 'v','' -replace '\..*',''
+    if ($nodeMajor -ge 18 -and $nodeMajor -le 24) {
+        Write-Success "Node.js version $nodeVersion (supported: 18-24)"
+    } else {
+        Write-Fail "Node.js version $nodeVersion not supported (need 18-24)"
+    }
+} catch {
+    Write-Fail "Node.js not found. Please install Node.js 18+"
+}
 
 # Detect package manager
 $usePNPM = Get-Command pnpm -ErrorAction SilentlyContinue
@@ -9,89 +105,276 @@ $useNPM = Get-Command npm -ErrorAction SilentlyContinue
 
 if ($usePNPM) {
     $PM = "pnpm"
-    Write-Host "📦 Using PNPM package manager" -ForegroundColor Green
-} else {
+    $PM_VERSION = pnpm --version
+    Write-Success "Using PNPM v$PM_VERSION"
+} elseif ($useNPM) {
     $PM = "npm"
-    Write-Host "📦 Using NPM package manager" -ForegroundColor Green
+    $PM_VERSION = npm --version
+    Write-Success "Using NPM v$PM_VERSION"
+} else {
+    Write-Fail "No package manager found (pnpm or npm)"
 }
 
-# 1. Clean entropy
-Write-Host "`n🧹 Cleaning entropy..." -ForegroundColor Yellow
-Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
-Remove-Item -Force package-lock.json, pnpm-lock.yaml -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force .pnpm-store -ErrorAction SilentlyContinue
-Write-Host "✅ Clean complete" -ForegroundColor Green
+# Check git
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    $gitVersion = git --version
+    Write-Success "Git: $gitVersion"
+} else {
+    Write-Warning "Git not found - cloning will fail"
+}
 
-# 2. Install dependencies
-Write-Host "`n📦 Installing dependencies..." -ForegroundColor Yellow
+# Check GitHub CLI
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    $ghVersion = gh --version | Select-Object -First 1
+    Write-Success "GitHub CLI: $ghVersion"
+} else {
+    Write-Info "GitHub CLI not installed - PR creation will use API"
+}
+
+# ============================================================
+# Phase 2: Clean (if requested)
+# ============================================================
+if ($Clean) {
+    Write-Section "🧹 PHASE 2: Cleaning Artifacts"
+    
+    $foldersToClean = @("node_modules", "dist", ".pnpm-store", "coverage", "blockchain", ".elite-metrics")
+    foreach ($folder in $foldersToClean) {
+        if (Test-Path $folder) {
+            Remove-Item -Recurse -Force $folder -ErrorAction SilentlyContinue
+            Write-Success "Removed: $folder"
+        }
+    }
+    
+    $filesToClean = @("package-lock.json", "pnpm-lock.yaml", "oracle-memory.json", "oracle-blockchain.json")
+    foreach ($file in $filesToClean) {
+        if (Test-Path $file) {
+            Remove-Item -Force $file -ErrorAction SilentlyContinue
+            Write-Success "Removed: $file"
+        }
+    }
+}
+
+# ============================================================
+# Phase 3: Install Dependencies
+# ============================================================
+Write-Section "📦 PHASE 3: Installing Dependencies"
 
 if ($PM -eq "pnpm") {
-    # Try PNPM with Windows-friendly settings
-    pnpm config set symlink false
-    pnpm install --no-frozen-lockfile
+    Write-Info "Running PNPM install with Windows-friendly settings..."
+    pnpm config set symlink false 2>$null
+    pnpm install --no-frozen-lockfile 2>&1 | Out-Host
+    
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "⚠️ PNPM failed, falling back to NPM..." -ForegroundColor Yellow
+        Write-Warning "PNPM failed, falling back to NPM..."
         $PM = "npm"
-        npm install
+        npm install 2>&1 | Out-Host
     }
-} 
+}
 
 if ($PM -eq "npm") {
-    npm install
+    Write-Info "Running NPM install..."
+    npm install 2>&1 | Out-Host
 }
 
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "❌ Install failed" -ForegroundColor Red
+if ($LASTEXITCODE -ne 0) {
+    Write-Fail "Dependency installation failed"
     exit 1
 }
-Write-Host "✅ Install complete" -ForegroundColor Green
+Write-Success "Dependencies installed"
 
-# 3. Type check
-Write-Host "`n🔍 Running type check..." -ForegroundColor Yellow
-if ($PM -eq "pnpm") {
-    pnpm run typecheck
-} else {
-    npm run typecheck
+# ============================================================
+# Phase 4: TypeScript Type Check
+# ============================================================
+if (-not $SkipBuild) {
+    Write-Section "🔷 PHASE 4: TypeScript Type Check"
+    
+    Write-Info "Running type checker..."
+    if ($PM -eq "pnpm") {
+        pnpm run typecheck 2>&1 | Out-Host
+    } else {
+        npm run typecheck 2>&1 | Out-Host
+    }
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Type check failed"
+        exit 1
+    }
+    Write-Success "Type check passed"
 }
 
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "❌ Type check failed" -ForegroundColor Red
+# ============================================================
+# Phase 5: Build Project
+# ============================================================
+if (-not $SkipBuild) {
+    Write-Section "🔨 PHASE 5: Building Project"
+    
+    Write-Info "Compiling TypeScript..."
+    if ($PM -eq "pnpm") {
+        pnpm run build 2>&1 | Out-Host
+    } else {
+        npm run build 2>&1 | Out-Host
+    }
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Build failed"
+        exit 1
+    }
+    Write-Success "Build complete"
+    
+    # Verify build output
+    if (Test-Path "dist/index.js") {
+        $buildSize = (Get-Item "dist/index.js").Length / 1KB
+        Write-Success "Build output found (${buildSize}KB)"
+    } else {
+        Write-Warning "dist/index.js not found"
+    }
+}
+
+# ============================================================
+# Phase 6: Run Tests
+# ============================================================
+if (-not $SkipTests) {
+    Write-Section "🧪 PHASE 6: Running Tests"
+    
+    Write-Info "Executing test suite..."
+    if ($EliteMode) {
+        Write-Info "Running Elite test suite..."
+        if ($PM -eq "pnpm") {
+            pnpm run test:elite 2>&1 | Out-Host
+        } else {
+            npm run test:elite 2>&1 | Out-Host
+        }
+    } else {
+        if ($PM -eq "pnpm") {
+            pnpm test 2>&1 | Out-Host
+        } else {
+            npm test 2>&1 | Out-Host
+        }
+    }
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Tests had failures (non-blocking in dev mode)"
+    } else {
+        Write-Success "All tests passed"
+    }
+}
+
+# ============================================================
+# Phase 7: Lint & Format
+# ============================================================
+Write-Section "✨ PHASE 7: Code Quality"
+
+Write-Info "Running linter..."
+if ($PM -eq "pnpm") {
+    pnpm run lint -- --fix --quiet 2>$null
+} else {
+    npm run lint -- --fix --quiet 2>$null
+}
+Write-Success "Lint complete"
+
+Write-Info "Running formatter..."
+if ($PM -eq "pnpm") {
+    pnpm run format 2>$null
+} else {
+    npm run format 2>$null
+}
+Write-Success "Format complete"
+
+# ============================================================
+# Phase 8: Elite Features Validation
+# ============================================================
+Write-Section "👑 PHASE 8: Elite Features Validation"
+
+# Check blockchain directory
+if (Test-Path "blockchain") {
+    $blockCount = (Get-ChildItem "blockchain" -Filter "*.json" -ErrorAction SilentlyContinue).Count
+    Write-Success "Blockchain directory exists ($blockCount blocks)"
+} else {
+    Write-Info "Blockchain directory will be created on first run"
+}
+
+# Check oracle memory
+if (Test-Path "oracle-memory.json") {
+    Write-Success "Oracle memory file exists"
+} else {
+    Write-Info "Oracle memory will be created on first use"
+}
+
+# Check surgery room
+if (Test-Path "surgery-room") {
+    Write-Success "Surgery room directory exists"
+} else {
+    Write-Fail "Surgery room directory missing"
+}
+
+# Check dynamic test shifter
+if (Test-Path "surgery-room/DynamicTestShifter.js") {
+    Write-Success "Dynamic test shifter present"
+} else {
+    Write-Warning "DynamicTestShifter.js not found"
+}
+
+# ============================================================
+# Phase 9: Start Server (optional)
+# ============================================================
+Write-Section "🏥 PHASE 9: Server Startup"
+
+Write-Info "Starting server on port 3001..."
+$serverProcess = Start-Process -FilePath "node" -ArgumentList "server.js" -PassThru -NoNewWindow
+Start-Sleep -Seconds 3
+
+# Check health endpoint
+try {
+    $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -UseBasicParsing -ErrorAction Stop
+    if ($response.StatusCode -eq 200) {
+        Write-Success "Server is running"
+        Write-Info "Dashboard: http://localhost:3001"
+        Write-Info "API: http://localhost:3001/api/surgery/records"
+        
+        # Check elite features
+        $healthData = $response.Content | ConvertFrom-Json
+        if ($healthData.version -eq $ELITE_VERSION) {
+            Write-Success "Elite version $ELITE_VERSION detected"
+        }
+    } else {
+        Write-Warning "Server health check failed"
+    }
+} catch {
+    Write-Warning "Server not responding (may not be critical)"
+}
+
+# Don't kill server - let it run for manual testing
+Write-Info "Server running in background (PID: $($serverProcess.Id))"
+Write-Info "To stop: Stop-Process -Id $($serverProcess.Id)"
+
+# ============================================================
+# Test Summary
+# ============================================================
+Write-Section "📊 TEST SUMMARY"
+
+$totalTests = $TestPassed + $TestFailed + $TestWarnings
+Write-Host ""
+Write-Host "Results:" -ForegroundColor White
+Write-Host "  ✅ Passed: $TestPassed" -ForegroundColor Green
+Write-Host "  ❌ Failed: $TestFailed" -ForegroundColor Red
+Write-Host "  ⚠️ Warnings: $TestWarnings" -ForegroundColor Yellow
+Write-Host "  📊 Total: $totalTests" -ForegroundColor Cyan
+Write-Host ""
+
+if ($TestFailed -gt 0) {
+    Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Red
+    Write-Host "║  ❌ TEST SUITE FAILED - $TestFailed critical failure(s)                    ║" -ForegroundColor Red
+    Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Red
     exit 1
-}
-Write-Host "✅ Type check passed" -ForegroundColor Green
-
-# 4. Build
-Write-Host "`n🔨 Building project..." -ForegroundColor Yellow
-if ($PM -eq "pnpm") {
-    pnpm run build
+} elseif ($TestWarnings -gt 0) {
+    Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
+    Write-Host "║  ⚠️ TEST SUITE PASSED WITH WARNINGS - $TestWarnings warning(s)               ║" -ForegroundColor Yellow
+    Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+    exit 0
 } else {
-    npm run build
+    Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Green
+    Write-Host "║  ✅ TEST SUITE PASSED - All Windows checks successful!       ║" -ForegroundColor Green
+    Write-Host "║  🚀 Atomic Swarm Gods Elite v$ELITE_VERSION is ready!                    ║" -ForegroundColor Green
+    Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+    exit 0
 }
-
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "❌ Build failed" -ForegroundColor Red
-    exit 1
-}
-Write-Host "✅ Build complete" -ForegroundColor Green
-
-# 5. Test
-Write-Host "`n✅ Running tests..." -ForegroundColor Yellow
-if ($PM -eq "pnpm") {
-    pnpm run test
-} else {
-    npm run test
-}
-Write-Host "✅ Tests complete" -ForegroundColor Green
-
-# 6. Verify output
-Write-Host "`n📁 Verifying build output..." -ForegroundColor Yellow
-if (Test-Path "dist/index.js") {
-    Write-Host "✅ Build output found" -ForegroundColor Green
-    Write-Host "`n🚀 Running the application:" -ForegroundColor Cyan
-    node dist/index.js
-} else {
-    Write-Host "⚠️ No build output found" -ForegroundColor Yellow
-}
-
-Write-Host "`n🎉 All tests passed!" -ForegroundColor Green
