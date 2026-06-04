@@ -1,10 +1,9 @@
-﻿name: 🚀 Elite Auto-Release Pipeline
+name: 🚀 Elite Auto-Release Pipeline
 
 on:
   push:
     branches: [main]
 
-# 🔴 CRITICAL: Write permissions for releases
 permissions:
   contents: write
   packages: write
@@ -23,15 +22,12 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      
+
       - name: Analyze commit messages
         id: semantic
         run: |
-          # Get commits since last tag
           last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           commits=$(git log $last_tag..HEAD --format=%s)
-          
-          # Check for breaking changes
           if echo "$commits" | grep -qE '^feat!:|^fix!:|.*BREAKING CHANGE:'; then
             echo "release-type=major" >> $GITHUB_OUTPUT
           elif echo "$commits" | grep -q '^feat:'; then
@@ -41,7 +37,7 @@ jobs:
           else
             echo "release-type=none" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Calculate new version
         id: version
         run: |
@@ -50,7 +46,6 @@ jobs:
           major=$(echo $current_version | cut -d. -f1)
           minor=$(echo $current_version | cut -d. -f2)
           patch=$(echo $current_version | cut -d. -f3)
-          
           case "${{ steps.semantic.outputs.release-type }}" in
             major)
               new_version="v$((major+1)).0.0"
@@ -82,19 +77,19 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: '22'
-      
+
       - name: Update package.json version
         run: |
           new_version="${{ needs.analyze-commits.outputs.new-version }}"
           new_version=${new_version#v}
           npm version $new_version --no-git-tag-version
           echo "✅ Updated package.json to v$new_version"
-      
+
       - name: Create Git tag
         run: |
           git config user.name "Atomic Swarm Gods Elite Bot"
@@ -104,9 +99,9 @@ jobs:
           git tag ${{ needs.analyze-commits.outputs.new-version }}
           git push origin ${{ needs.analyze-commits.outputs.new-version }}
           git push origin main
-      
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        uses: softprops/action-gh-release@c95fe14f284dcd3490f620ccd2c5cf2595a7ad1c # v2.2.1
         with:
           tag_name: ${{ needs.analyze-commits.outputs.new-version }}
           name: "🚀 Elite Release ${{ needs.analyze-commits.outputs.new-version }}"
@@ -127,8 +122,9 @@ jobs:
             ### 📦 Installation
             ```bash
             npm install @atomic-gods/elite@${{ needs.analyze-commits.outputs.new-version }}
-generate_release_notes: true
-draft: false
-prerelease: false
-env:
-GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ```
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
