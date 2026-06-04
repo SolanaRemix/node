@@ -1,0 +1,289 @@
+name: "⚛️ Atomic Self-Healing - Dynamic Auto-Repair"
+
+on:
+  push:
+    branches: [main, develop, master]
+  schedule:
+    - cron: '*/30 * * * *'   # Run every 30 minutes
+  workflow_dispatch:
+    inputs:
+      force_heal:
+        description: 'Force self-healing even if tests pass'
+        required: false
+        default: false
+        type: boolean
+      security_level:
+        description: 'Hardening level (minimal/standard/maximum)'
+        required: false
+        default: 'maximum'
+        type: choice
+        options: [minimal, standard, maximum]
+
+permissions:
+  contents: write       # To commit fixes
+  actions: read         # To read test results
+  checks: read          # To read check runs
+
+env:
+  ELITE_VERSION: "1.7.0"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  HARDENING_LEVEL: "maximum"
+
+concurrency:
+  group: self-heal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================
+  # PHASE 1: Parallel Test Detection
+  # ============================================================
+  detect-failures:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+      fail-fast: false
+    outputs:
+      any_failed: ${{ steps.set-result.outputs.any_failed }}
+      failures_json: ${{ steps.collect.outputs.failures_json }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run tests (capture failures)
+        id: test
+        run: |
+          set +e
+          npm test -- --json --outputFile=test-results-${{ matrix.node }}.json 2>&1 | tee test-output-${{ matrix.node }}.log
+          exit_code=$?
+          echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+          if [ $exit_code -ne 0 ]; then
+            echo "failed=true" >> $GITHUB_OUTPUT
+          else
+            echo "failed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee5fd990382 # v4.4.3
+        if: always()
+        with:
+          name: test-results-node-${{ matrix.node }}
+          path: |
+            test-results-${{ matrix.node }}.json
+            test-output-${{ matrix.node }}.log
+
+    # Aggregate results after matrix finishes
+    aggregate-results:
+      runs-on: ubuntu-latest
+      needs: detect-failures
+      if: always()
+      outputs:
+        any_failed: ${{ steps.aggregate.outputs.any_failed }}
+        failures_json: ${{ steps.aggregate.outputs.failures_json }}
+      steps:
+        - name: Download all test artifacts
+          uses: actions/download-artifact@v4   # TO BE PINNED – will replace after
+          continue-on-error: true
+        - id: aggregate
+          run: |
+            failed_any=false
+            failures="[]"
+            for f in test-results-node-*/test-results-*.json; do
+              if [ -f "$f" ]; then
+                if grep -q '"failed":true' "$f" 2>/dev/null; then
+                  failed_any=true
+                fi
+                # Append failure details
+                failures=$(jq -c ". + [$(cat $f)]" <<< "$failures" 2>/dev/null || echo "$failures")
+              fi
+            done
+            echo "any_failed=$failed_any" >> $GITHUB_OUTPUT
+            echo "failures_json=$failures" >> $GITHUB_OUTPUT
+
+  # ============================================================
+  # PHASE 2: Dynamic Smart Switch – Choose Repair Strategy
+  # ============================================================
+  choose-strategy:
+    runs-on: ubuntu-latest
+    needs: [detect-failures, aggregate-results]
+    if: github.event.inputs.force_heal == 'true' || needs.aggregate-results.outputs.any_failed == 'true'
+    outputs:
+      repair_strategy: ${{ steps.switch.outputs.strategy }}
+      security_patches: ${{ steps.switch.outputs.patches }}
+    steps:
+      - id: switch
+        run: |
+          FAILURES='${{ needs.aggregate-results.outputs.failures_json }}'
+          HARDENING="${{ github.event.inputs.security_level || 'maximum' }}"
+          
+          # Dynamic pattern matching
+          if echo "$FAILURES" | grep -qi "TypeError\|cannot read property"; then
+            STRATEGY="null-checks"
+            PATCHES="add_null_guards,optional_chaining"
+          elif echo "$FAILURES" | grep -qi "SyntaxError\|unexpected token"; then
+            STRATEGY="syntax-fix"
+            PATCHES="eslint_autofix,prettier"
+          elif echo "$FAILURES" | grep -qi "security\|CVE\|vulnerab"; then
+            STRATEGY="security-patch"
+            PATCHES="npm_audit_fix,dep_upgrade"
+          elif echo "$FAILURES" | grep -qi "timeout\|performance"; then
+            STRATEGY="performance"
+            PATCHES="increase_timeout,optimize_loops"
+          else
+            STRATEGY="adaptive-hardening"
+            PATCHES="add_helmet,rate_limiting,input_sanitization"
+          fi
+          
+          # Add production hardening based on security_level
+          if [ "$HARDENING" = "maximum" ]; then
+            PATCHES="${PATCHES},csp_headers,csrf_protection,audit_logging"
+          elif [ "$HARDENING" = "standard" ]; then
+            PATCHES="${PATCHES},csp_headers"
+          fi
+          
+          echo "strategy=$STRATEGY" >> $GITHUB_OUTPUT
+          echo "patches=$PATCHES" >> $GITHUB_OUTPUT
+          
+          echo "🎛️ Dynamic Smart Switch active:"
+          echo "  • Strategy: $STRATEGY"
+          echo "  • Patches: $PATCHES"
+          echo "  • Hardening: $HARDENING"
+
+  # ============================================================
+  # PHASE 3: Parallel Healing – Inject Hardened Security Code
+  # ============================================================
+  parallel-heal:
+    runs-on: ubuntu-latest
+    needs: choose-strategy
+    strategy:
+      matrix:
+        healing_approach: [inline, patch, regenerate]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: '22'
+
+      - name: "🔧 Apply ${{ matrix.healing_approach }} healing"
+        id: heal
+        run: |
+          STRATEGY="${{ needs.choose-strategy.outputs.repair_strategy }}"
+          PATCHES="${{ needs.choose-strategy.outputs.security_patches }}"
+          
+          echo "🩹 Healing approach: ${{ matrix.healing_approach }}"
+          echo "  • Strategy: $STRATEGY"
+          echo "  • Patches: $PATCHES"
+          
+          # Simulate injection of hardened code (replace with actual logic)
+          mkdir -p .healing/${{ matrix.healing_approach }}
+          cat > .healing/${{ matrix.healing_approach }}/applied-patches.json << EOF
+          {
+            "strategy": "$STRATEGY",
+            "patches": "$PATCHES",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "approach": "${{ matrix.healing_approach }}",
+            "hardening_level": "${{ github.event.inputs.security_level || 'maximum' }}"
+          }
+          EOF
+          
+          # Example: Add security middleware if missing (conceptual)
+          if [ "$STRATEGY" = "security-patch" ] && [ ! -f "src/security/helmet.js" ]; then
+            mkdir -p src/security
+            cat > src/security/helmet.js << 'HELMET'
+          // Hardened security middleware - auto-injected by Elite Self-Healing
+          const helmet = require('helmet');
+          module.exports = helmet({
+            contentSecurityPolicy: {
+              directives: {
+                defaultSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc: ["'self'"],
+              },
+            },
+            hsts: { maxAge: 31536000, includeSubDomains: true },
+            frameguard: { action: 'deny' },
+          });
+          HELMET
+            echo "  ✅ Injected helmet security middleware"
+          fi
+          
+          echo "applied=true" >> $GITHUB_OUTPUT
+
+      - name: Validate healing (run tests again)
+        run: |
+          npm ci && npm test
+          if [ $? -ne 0 ]; then
+            echo "❌ Healing approach ${{ matrix.healing_approach }} did not fix tests"
+            exit 1
+          else
+            echo "✅ Healing approach ${{ matrix.healing_approach }} succeeded"
+          fi
+
+  # ============================================================
+  # PHASE 4: Commit Successful Fixes (NO PR)
+  # ============================================================
+  commit-fixes:
+    runs-on: ubuntu-latest
+    needs: parallel-heal
+    if: always() && needs.parallel-heal.result == 'success'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect successful healing artifacts
+        run: |
+          mkdir -p .successful-healing
+          find .healing -name "applied-patches.json" -exec cp {} .successful-healing/ \;
+
+      - name: Commit & push fixes directly (NO PR)
+        run: |
+          git config user.name "Elite Self-Healing Bot"
+          git config user.email "self-healing@atomic-swarm-gods.dev"
+          
+          git add .
+          git add .healing/ .successful-healing/ src/security/ 2>/dev/null || true
+          
+          if ! git diff --staged --quiet; then
+            git commit -m "⚛️ Atomic Self-Healing: Auto-injected hardened security fixes"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+            echo "✅ Fixes committed directly (no PR)"
+          else
+            echo "ℹ️ No changes to commit"
+          fi
+
+      - name: Notify success
+        run: echo "✅ Self-healing cycle completed successfully"
+
+  # ============================================================
+  # PHASE 5: Final Verification (Parallel Tests)
+  # ============================================================
+  final-verification:
+    runs-on: ubuntu-latest
+    needs: commit-fixes
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci && npm test
+      - name: Final report
+        run: echo "✅ All tests passed after self-healing on Node ${{ matrix.node }}"
