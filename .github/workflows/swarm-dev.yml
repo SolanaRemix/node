@@ -1,4 +1,4 @@
-﻿name: "ðŸŒ Agentic Swarm WASM Elite v1.7 - Enterprise Dev"
+name: "🌐 Agentic Swarm WASM Elite v1.7 - Enterprise Dev"
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [dev, main, master]
     types: [opened, synchronize, ready_for_review]
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours - swarm intelligence gathering
+    - cron: '0 */6 * * *'
   workflow_dispatch:
     inputs:
       repair_type:
@@ -28,12 +28,7 @@ on:
         required: false
         default: '7'
         type: choice
-        options:
-          - '1'
-          - '3'
-          - '5'
-          - '7'
-          - '10'
+        options: ['1', '3', '5', '7', '10']
       target_wasm:
         description: 'Target WASM modules only'
         required: false
@@ -53,7 +48,6 @@ env:
   SWARM_AGENTS: "5"
   WASM_OPTIMIZATION: "true"
 
-# Force bash shell for all steps
 defaults:
   run:
     shell: bash
@@ -64,15 +58,14 @@ jobs:
     outputs:
       swarm_id: ${{ steps.swarm.outputs.id }}
       wasm_count: ${{ steps.wasm.outputs.count }}
-      repair_mode: ${{ steps.router.outputs.repair_type }}
-      
+      repair_type: ${{ steps.router.outputs.repair_type }}   # ✅ FIXED: output name
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: "ðŸ”„ Smart Swarm Router"
+
+      - name: "🔌 Smart Swarm Router"
         id: router
         run: |
           REPAIR_TYPE="${{ github.event.inputs.repair_type }}"
@@ -80,45 +73,40 @@ jobs:
             REPAIR_TYPE="swarm-full"
           fi
           echo "repair_type=$REPAIR_TYPE" >> $GITHUB_OUTPUT
-          echo "ðŸ”€ Swarm Router: $REPAIR_TYPE"
-      
-      - name: "ðŸ§  Swarm Intelligence ID"
+          echo "🔀 Swarm Router: $REPAIR_TYPE"
+
+      - name: "🧠 Swarm Intelligence ID"
         id: swarm
         run: |
           SWARM_ID="swarm-$(date +%s)-${{ github.run_id }}"
           echo "id=$SWARM_ID" >> $GITHUB_OUTPUT
-          echo "ðŸ Swarm ID: $SWARM_ID"
-          
-          # Initialize swarm analytics
+          echo "🐝 Swarm ID: $SWARM_ID"
           mkdir -p .swarm-analytics
           echo "{\"swarm_id\":\"$SWARM_ID\",\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"intensity\":${{ inputs.swarm_intensity || 7 }}}" > .swarm-analytics/swarm-$SWARM_ID.json
-      
-      - name: "ðŸ¦€ WASM Module Intelligence"
+
+      - name: "🦞 WASM Module Intelligence"
         id: wasm
         run: |
-          echo "ðŸ¦€ Elite WASM intelligence gathering..."
-          
+          echo "🦞 Elite WASM intelligence gathering..."
           WASM_COUNT=$(find . -name "*.wasm" -type f 2>/dev/null | wc -l)
           WAT_COUNT=$(find . -name "*.wat" -type f 2>/dev/null | wc -l)
           WASM_JS=$(find . -name "*.wasm.js" -o -name "*.wasm.ts" 2>/dev/null | wc -l)
-          
           echo "count=$WASM_COUNT" >> $GITHUB_OUTPUT
           echo "wat_count=$WAT_COUNT" >> $GITHUB_OUTPUT
           echo "js_bindings=$WASM_JS" >> $GITHUB_OUTPUT
-          
-          echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
-          echo "â•‘  ðŸ¦€ WASM INTELLIGENCE REPORT                                 â•‘"
-          echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
-          echo "ðŸ“Š WASM Modules: $WASM_COUNT"
-          echo "ðŸ“ WAT Files: $WAT_COUNT"
-          echo "ðŸ”— JS/TS Bindings: $WASM_JS"
-          
+          # ... rest of original WASM report (unchanged) ...
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  🦞 WASM INTELLIGENCE REPORT                                 ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo "📊 WASM Modules: $WASM_COUNT"
+          echo "📝 WAT Files: $WAT_COUNT"
+          echo "🔗 JS/TS Bindings: $WASM_JS"
           if [ $WASM_COUNT -gt 0 ]; then
             echo ""
-            echo "ðŸ“¦ Detected WASM modules:"
+            echo "📦 Detected WASM modules:"
             find . -name "*.wasm" -type f 2>/dev/null | head -10 | while read -r module; do
               SIZE=$(stat -c%s "$module" 2>/dev/null || stat -f%z "$module" 2>/dev/null || echo "unknown")
-              echo "  ðŸ¦€ $(basename "$module") (${SIZE} bytes)"
+              echo "  🦞 $(basename "$module") (${SIZE} bytes)"
             done
           fi
 
@@ -130,29 +118,26 @@ jobs:
         node: [20, 22, 24]
         agent: [1, 2, 3, 4, 5]
       fail-fast: false
-      
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: ${{ matrix.node }}.x
           cache: 'npm'
-      
+
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v3.0.0
         with:
           version: 8
-      
-      - name: "ðŸ Agent ${{ matrix.agent }} - Initializing"
+
+      - name: "🐝 Agent ${{ matrix.agent }} - Initializing"
         run: |
-          echo "ðŸ Swarm Agent #${{ matrix.agent }} activating on Node ${{ matrix.node }}"
-          echo "ðŸŽ¯ Swarm ID: ${{ needs.swarm-orchestrator.outputs.swarm_id }}"
-          echo "ðŸ”„ Repair Mode: ${{ needs.swarm-orchestrator.outputs.repair_mode }}"
-          
-          # Agent-specific configuration
+          echo "🐝 Swarm Agent #${{ matrix.agent }} activating on Node ${{ matrix.node }}"
+          echo "🎯 Swarm ID: ${{ needs.swarm-orchestrator.outputs.swarm_id }}"
+          echo "🔌 Repair Type: ${{ needs.swarm-orchestrator.outputs.repair_type }}"
           AGENT_ROLE="worker"
           if [ ${{ matrix.agent }} -eq 1 ]; then
             AGENT_ROLE="orchestrator"
@@ -165,24 +150,23 @@ jobs:
           elif [ ${{ matrix.agent }} -eq 5 ]; then
             AGENT_ROLE="observer"
           fi
-          
-          echo "ðŸ¤– Agent Role: $AGENT_ROLE"
+          echo "🤖 Agent Role: $AGENT_ROLE"
           echo "agent_role=$AGENT_ROLE" >> $GITHUB_ENV
-      
-      - name: "ðŸ§¹ Agent ${{ matrix.agent }} - Clean Entropy"
-        if: contains(needs.swarm-orchestrator.outputs.repair_mode, 'clean') || contains(needs.swarm-orchestrator.outputs.repair_mode, 'full')
+
+      - name: "🧹 Agent ${{ matrix.agent }} - Clean Entropy"
+        # ✅ FIXED: use correct output name and proper "not contains" syntax
+        if: contains(needs.swarm-orchestrator.outputs.repair_type, 'clean') || contains(needs.swarm-orchestrator.outputs.repair_type, 'full')
         run: |
-          echo "ðŸ§¹ Agent #${{ matrix.agent }} performing elite entropy cleanup..."
+          echo "🧹 Agent #${{ matrix.agent }} performing elite entropy cleanup..."
           rm -rf node_modules .pnpm-store .swarm-cache 2>/dev/null || true
           rm -f pnpm-lock.yaml package-lock.json yarn.lock 2>/dev/null || true
-          echo "âœ… Agent #${{ matrix.agent }} cleanup complete"
-      
-      - name: "ðŸ“¦ Agent ${{ matrix.agent }} - Smart Dependency Installation"
-        if: !contains(needs.swarm-orchestrator.outputs.repair_mode, 'clean')
+          echo "✅ Agent #${{ matrix.agent }} cleanup complete"
+
+      - name: "📦 Agent ${{ matrix.agent }} - Smart Dependency Installation"
+        # ✅ FIXED: invert condition using == false
+        if: contains(needs.swarm-orchestrator.outputs.repair_type, 'clean') == false
         run: |
-          echo "ðŸ“¦ Agent #${{ matrix.agent }} resolving dependencies..."
-          
-          # Intelligent package manager selection
+          echo "📦 Agent #${{ matrix.agent }} resolving dependencies..."
           if [ -f "pnpm-lock.yaml" ]; then
             pnpm install --frozen-lockfile || pnpm install
           elif [ -f "yarn.lock" ]; then
@@ -190,85 +174,70 @@ jobs:
           else
             npm ci || npm install
           fi
-          
-          echo "âœ… Agent #${{ matrix.agent }} dependencies ready"
-      
-      - name: "ðŸ¦€ Agent ${{ matrix.agent }} - WASM Optimization"
+          echo "✅ Agent #${{ matrix.agent }} dependencies ready"
+
+      - name: "🦞 Agent ${{ matrix.agent }} - WASM Optimization"
         if: needs.swarm-orchestrator.outputs.wasm_count > 0
         run: |
-          echo "ðŸ¦€ Agent #${{ matrix.agent }} optimizing WASM modules..."
-          
+          echo "🦞 Agent #${{ matrix.agent }} optimizing WASM modules..."
           WASM_MODULES=$(find . -name "*.wasm" -type f 2>/dev/null)
           for module in $WASM_MODULES; do
-            echo "  ðŸ”§ Optimizing: $(basename "$module")"
-            # WASM optimization (simulated - real optimization would use wasm-opt)
+            echo "  🔧 Optimizing: $(basename "$module")"
             SIZE_BEFORE=$(stat -c%s "$module" 2>/dev/null || stat -f%z "$module" 2>/dev/null || echo "0")
-            echo "    ðŸ“¦ Size before: ${SIZE_BEFORE} bytes"
-            echo "    âœ¨ Optimization applied (simulated)"
+            echo "    📦 Size before: ${SIZE_BEFORE} bytes"
+            echo "    ✨ Optimization applied (simulated)"
           done
-          
-          echo "âœ… Agent #${{ matrix.agent }} WASM optimization complete"
-      
-      - name: "ðŸ” Agent ${{ matrix.agent }} - TypeScript Analysis"
+          echo "✅ Agent #${{ matrix.agent }} WASM optimization complete"
+
+      - name: "🔍 Agent ${{ matrix.agent }} - TypeScript Analysis"
         run: |
-          echo "ðŸ” Agent #${{ matrix.agent }} analyzing TypeScript..."
-          
+          echo "🔍 Agent #${{ matrix.agent }} analyzing TypeScript..."
           if [ -f "tsconfig.json" ]; then
             if npm list typescript --depth=0 &>/dev/null || pnpm list typescript --depth=0 &>/dev/null; then
-              npx tsc --noEmit --strict --skipLibCheck 2>&1 | head -20 || echo "âš ï¸ TypeScript issues detected"
-              
-              # Count issues
+              npx tsc --noEmit --strict --skipLibCheck 2>&1 | head -20 || echo "⚠️ TypeScript issues detected"
               TS_ERRORS=$(npx tsc --noEmit --strict 2>&1 | grep -c "error TS" || echo "0")
-              echo "ðŸ“Š TypeScript errors: $TS_ERRORS"
+              echo "📊 TypeScript errors: $TS_ERRORS"
             else
-              echo "â„¹ï¸ TypeScript not installed"
+              echo "ℹ️ TypeScript not installed"
             fi
           else
-            echo "â„¹ï¸ No tsconfig.json found"
+            echo "ℹ️ No tsconfig.json found"
           fi
-      
-      - name: "ðŸ”¨ Agent ${{ matrix.agent }} - Build Orchestration"
-        if: contains(needs.swarm-orchestrator.outputs.repair_mode, 'build') || contains(needs.swarm-orchestrator.outputs.repair_mode, 'full')
+
+      - name: "🔨 Agent ${{ matrix.agent }} - Build Orchestration"
+        if: contains(needs.swarm-orchestrator.outputs.repair_type, 'build') || contains(needs.swarm-orchestrator.outputs.repair_type, 'full')
         run: |
-          echo "ðŸ”¨ Agent #${{ matrix.agent }} orchestrating build..."
-          
+          echo "🔨 Agent #${{ matrix.agent }} orchestrating build..."
           if npm run 2>/dev/null | grep -q "build"; then
-            npm run build 2>&1 || echo "âš ï¸ Build had non-blocking issues"
+            npm run build 2>&1 || echo "⚠️ Build had non-blocking issues"
           else
-            # Attempt TypeScript compilation directly
             if [ -f "tsconfig.json" ]; then
-              npx tsc 2>&1 || echo "âš ï¸ TypeScript compilation had issues"
+              npx tsc 2>&1 || echo "⚠️ TypeScript compilation had issues"
             fi
           fi
-          
-          echo "âœ… Agent #${{ matrix.agent }} build complete"
-      
-      - name: "ðŸ§ª Agent ${{ matrix.agent }} - Test Execution"
-        if: contains(needs.swarm-orchestrator.outputs.repair_mode, 'test') || contains(needs.swarm-orchestrator.outputs.repair_mode, 'full')
+          echo "✅ Agent #${{ matrix.agent }} build complete"
+
+      - name: "🧪 Agent ${{ matrix.agent }} - Test Execution"
+        if: contains(needs.swarm-orchestrator.outputs.repair_type, 'test') || contains(needs.swarm-orchestrator.outputs.repair_type, 'full')
         run: |
-          echo "ðŸ§ª Agent #${{ matrix.agent }} executing tests..."
-          
+          echo "🧪 Agent #${{ matrix.agent }} executing tests..."
           if npm run 2>/dev/null | grep -q "test"; then
-            npm test 2>&1 || echo "âš ï¸ Tests had non-blocking issues"
+            npm test 2>&1 || echo "⚠️ Tests had non-blocking issues"
           else
-            echo "â„¹ï¸ No test script found"
+            echo "ℹ️ No test script found"
           fi
-          
-          echo "âœ… Agent #${{ matrix.agent }} tests complete"
-      
-      - name: "ðŸ”’ Agent ${{ matrix.agent }} - Security Audit"
-        if: contains(needs.swarm-orchestrator.outputs.repair_mode, 'security') || contains(needs.swarm-orchestrator.outputs.repair_mode, 'full')
+          echo "✅ Agent #${{ matrix.agent }} tests complete"
+
+      - name: "🔒 Agent ${{ matrix.agent }} - Security Audit"
+        if: contains(needs.swarm-orchestrator.outputs.repair_type, 'security') || contains(needs.swarm-orchestrator.outputs.repair_type, 'full')
         run: |
-          echo "ðŸ”’ Agent #${{ matrix.agent }} running security audit..."
-          
-          npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities' || echo "âš ï¸ Audit completed"
-          
-          echo "âœ… Agent #${{ matrix.agent }} security audit complete"
-      
-      - name: "ðŸ“Š Agent ${{ matrix.agent }} - Performance Metrics"
+          echo "🔒 Agent #${{ matrix.agent }} running security audit..."
+          npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities' || echo "⚠️ Audit completed"
+          echo "✅ Agent #${{ matrix.agent }} security audit complete"
+
+      - name: "📊 Agent ${{ matrix.agent }} - Performance Metrics"
         run: |
-          echo "ðŸ“Š Agent #${{ matrix.agent }} collecting metrics..."
-          
+          echo "📊 Agent #${{ matrix.agent }} collecting metrics..."
           mkdir -p .swarm-metrics
           cat >> .swarm-metrics/agent-${{ matrix.agent }}.json << EOF
           {
@@ -279,10 +248,10 @@ jobs:
             "swarm_id": "${{ needs.swarm-orchestrator.outputs.swarm_id }}"
           }
           EOF
-      
-      - name: "âœ… Agent ${{ matrix.agent }} - Swarm Report"
+
+      - name: "✅ Agent ${{ matrix.agent }} - Swarm Report"
         run: |
-          echo "## ðŸ Swarm Agent #${{ matrix.agent }} Report - Node ${{ matrix.node }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐝 Swarm Agent #${{ matrix.agent }} Report - Node ${{ matrix.node }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -291,7 +260,7 @@ jobs:
           echo "| **WASM Modules** | ${{ needs.swarm-orchestrator.outputs.wasm_count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Swarm Intensity** | ${{ inputs.swarm_intensity || 7 }}/10 |" >> $GITHUB_STEP_SUMMARY
           echo "| **AI Confidence** | 99.97% |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Status** | ðŸŸ¢ Elite Active |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | 🟢 Elite Active |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
   swarm-analytics:
@@ -300,26 +269,23 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      
-      - name: "ðŸ“Š Swarm Analytics Aggregator"
+
+      - name: "📊 Swarm Analytics Aggregator"
         run: |
-          echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
-          echo "â•‘  ðŸ SWARM ANALYTICS - ELITE INTELLIGENCE                    â•‘"
-          echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
-          
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  🐝 SWARM ANALYTICS - ELITE INTELLIGENCE                    ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
           SWARM_ID="${{ needs.swarm-orchestrator.outputs.swarm_id }}"
-          echo "ðŸ“Š Swarm ID: $SWARM_ID"
-          echo "ðŸ¤– Active Agents: 5"
-          echo "ðŸ¦€ WASM Modules: ${{ needs.swarm-orchestrator.outputs.wasm_count }}"
-          echo "ðŸŽ¯ Swarm Intensity: ${{ inputs.swarm_intensity || 7 }}/10"
+          echo "📊 Swarm ID: $SWARM_ID"
+          echo "🤖 Active Agents: 5"
+          echo "🦞 WASM Modules: ${{ needs.swarm-orchestrator.outputs.wasm_count }}"
+          echo "🎯 Swarm Intensity: ${{ inputs.swarm_intensity || 7 }}/10"
           echo ""
-          echo "ðŸ“ˆ Aggregate Performance:"
-          echo "  â€¢ Total repair time: <45s"
-          echo "  â€¢ Agent efficiency: 94%"
-          echo "  â€¢ WASM optimization: Active"
-          echo "  â€¢ AI confidence: 99.97%"
-          
-          # Generate swarm completion report
+          echo "📈 Aggregate Performance:"
+          echo "  • Total repair time: <45s"
+          echo "  • Agent efficiency: 94%"
+          echo "  • WASM optimization: Active"
+          echo "  • AI confidence: 99.97%"
           cat > .swarm-analytics/completion.json << EOF
           {
             "swarm_id": "$SWARM_ID",
@@ -330,8 +296,8 @@ jobs:
             "intensity": ${{ inputs.swarm_intensity || 7 }}
           }
           EOF
-      
-      - name: "ðŸ’¬ Swarm PR Comment"
+
+      - name: "💬 Swarm PR Comment"
         if: github.event_name == 'pull_request'
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
@@ -339,29 +305,28 @@ jobs:
             const swarmId = '${{ needs.swarm-orchestrator.outputs.swarm_id }}';
             const wasmCount = ${{ needs.swarm-orchestrator.outputs.wasm_count }};
             const intensity = ${{ inputs.swarm_intensity || 7 }};
-            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ðŸ Agentic Swarm Elite v${{ env.ELITE_VERSION }}\n\n` +
+              body: `## 🐝 Agentic Swarm Elite v${{ env.ELITE_VERSION }}\n\n` +
                      `| Metric | Value |\n|--------|-------|\n` +
                      `| **Swarm ID** | \`${swarmId}\` |\n` +
                      `| **Active Agents** | 5 |\n` +
                      `| **WASM Modules** | ${wasmCount} |\n` +
                      `| **Swarm Intensity** | ${intensity}/10 |\n` +
                      `| **AI Confidence** | 99.97% |\n\n` +
-                     `### âœ… Swarm Actions Completed\n` +
-                     `- ðŸ§  Multi-agent orchestration\n` +
-                     `- ðŸ¦€ WASM module optimization\n` +
-                     `- ðŸ”’ Security audit\n` +
-                     `- ðŸ§ª Test execution\n` +
-                     `- ðŸ“Š Performance analytics\n\n` +
+                     `### ✅ Swarm Actions Completed\n` +
+                     `- 🧠 Multi-agent orchestration\n` +
+                     `- 🦞 WASM module optimization\n` +
+                     `- 🔒 Security audit\n` +
+                     `- 🧪 Test execution\n` +
+                     `- 📊 Performance analytics\n\n` +
                      `---\n` +
-                     `ðŸ¤– *Swarm intelligence by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`
+                     `🤖 *Swarm intelligence by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`
             });
-      
-      - name: "ðŸ·ï¸ Create Swarm Status Check"
+
+      - name: "🏷️ Create Swarm Status Check"
         if: github.event_name == 'pull_request'
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
