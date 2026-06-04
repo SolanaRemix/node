@@ -49,8 +49,7 @@ test-results/
 *.key
 *.cert
 secrets/
-. secrets/
-credentials.json
+.credentials.json
 
 # ----------------------------
 # IDE & Editor
@@ -63,7 +62,7 @@ credentials.json
 .DS_Store
 Thumbs.db
 .editorconfig
-. prettierrc
+.prettierrc
 .eslintcache
 
 # ----------------------------
@@ -84,11 +83,11 @@ debug/
 blockchain/blocks/
 blockchain/ledger.db
 .elite-metrics/
-. oracle-memory/
-. magic-analytics/
+.oracle-memory/
+.magic-analytics/
 *blockchain*.db
 audit-trail/
-. audit-reports/
+.audit-reports/
 
 # ----------------------------
 # Runtime & Session Data
@@ -126,14 +125,14 @@ docker-compose.override.yml
 # ----------------------------
 *.tsbuildinfo
 tsconfig.tsbuildinfo
-. tsc/
+.tsc/
 
 # ----------------------------
 # CI/CD
 # ----------------------------
 .github/workflows/*.bak
-. github/backups/
-. github/tmp/
+.github/backups/
+.github/tmp/
 
 # ----------------------------
 # Backup Files
@@ -178,11 +177,8 @@ coverage-report/
 .yarnrc.local
 
 # ----------------------------
-# Temporary Surgery Files
+# Temporary Surgery Files (keep .gitkeep)
 # ----------------------------
-surgery-room/repairs/
-surgery-room/successful/
-surgery-room/failed/
 !surgery-room/repairs/.gitkeep
 !surgery-room/successful/.gitkeep
 !surgery-room/failed/.gitkeep
@@ -193,7 +189,7 @@ surgery-room/failed/
 .perf/
 .metrics/
 .elite-performance/
-. repair-metrics/
+.repair-metrics/
 
 # ----------------------------
 # Memory & Cache
@@ -201,7 +197,7 @@ surgery-room/failed/
 .oracle-memory/
 .swarm-metrics/
 .swarm-analytics/
-. magic-cache/
+.magic-cache/
 .redis-data/
 
 # ----------------------------
@@ -228,7 +224,6 @@ service-account.json
 # ----------------------------
 # Large Binary Files
 # ----------------------------
-*.wasm
 *.so
 *.dylib
 *.dll
@@ -238,6 +233,8 @@ service-account.json
 *.tar
 *.gz
 *.zip
+# Optionally keep .wasm (remove line if you need to track WASM files)
+# *.wasm
 
 # ----------------------------
 # Database Files
