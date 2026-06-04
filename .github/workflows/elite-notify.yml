@@ -1,4 +1,4 @@
-﻿name: "ðŸ“¢ Elite Notifications v1.7 - Enterprise Alert System"
+name: "ðŸ“¢ Elite Notifications v1.7 - Enterprise Alert System"
 
 on:
   workflow_run:
