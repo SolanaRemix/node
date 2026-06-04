@@ -1,4 +1,4 @@
-﻿name: "ðŸ“ Elite Auto-Changelog & Blockchain Verification"
+name: "📝 Elite Auto-Changelog & Blockchain Verification"
 
 on:
   push:
@@ -49,12 +49,11 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: "ðŸ“Š Calculate Elite Metrics"
+      - name: "📊 Calculate Elite Metrics"
         id: stats
         run: |
           DAYS="${{ inputs.days_back || 7 }}"
           
-          # Count fixes and features
           FIX_COUNT=$(git log --since="${DAYS} days ago" --grep="fix:" --oneline | wc -l)
           FEATURE_COUNT=$(git log --since="${DAYS} days ago" --grep="feat:" --oneline | wc -l)
           ELITE_REPAIRS=$(git log --since="${DAYS} days ago" --grep="@repairFull\|@eliteAudit\|self-healing" --oneline | wc -l)
@@ -63,28 +62,25 @@ jobs:
           echo "features=$FEATURE_COUNT" >> $GITHUB_OUTPUT
           echo "elite_repairs=$ELITE_REPAIRS" >> $GITHUB_OUTPUT
           
-          echo "ðŸ“Š Elite Metrics for last $DAYS days:"
-          echo "  ðŸ”§ Fixes: $FIX_COUNT"
-          echo "  ðŸš€ Features: $FEATURE_COUNT"
-          echo "  ðŸ‘‘ Elite Repairs: $ELITE_REPAIRS"
+          echo "📊 Elite Metrics for last $DAYS days:"
+          echo "  🔧 Fixes: $FIX_COUNT"
+          echo "  🚀 Features: $FEATURE_COUNT"
+          echo "  🔱 Elite Repairs: $ELITE_REPAIRS"
       
-      - name: "â›“ï¸ Generate Blockchain Verification Hash"
+      - name: "⛓️ Generate Blockchain Verification Hash"
         id: blockchain
         if: inputs.include_blockchain != false
         run: |
-          # Create a verifiable blockchain hash from git history
           LAST_COMMIT=$(git rev-parse HEAD)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           REPO_NAME="${{ github.repository }}"
           
-          # Combine for unique blockchain hash
           BLOCKCHAIN_DATA="${LAST_COMMIT}|${TIMESTAMP}|${REPO_NAME}|${{ env.BLOCKCHAIN_SEED }}"
           BLOCKCHAIN_HASH=$(echo -n "$BLOCKCHAIN_DATA" | sha256sum | cut -d' ' -f1)
           
           echo "hash=$BLOCKCHAIN_HASH" >> $GITHUB_OUTPUT
-          echo "ðŸ”— Blockchain verification hash: ${BLOCKCHAIN_HASH:0:32}..."
+          echo "🔗 Blockchain verification hash: ${BLOCKCHAIN_HASH:0:32}..."
           
-          # Save to blockchain ledger
           mkdir -p blockchain/
           cat >> blockchain/ledger.json << EOF
           {
@@ -98,28 +94,26 @@ jobs:
           }
           EOF
       
-      - name: "ðŸ” Analyze Commit Patterns"
+      - name: "🔍 Analyze Commit Patterns"
         id: analysis
         run: |
           DAYS="${{ inputs.days_back || 7 }}"
           
-          # Top contributors
-          echo "## ðŸ‘¥ Top Contributors" > CONTRIBUTORS.md
+          echo "## 👥 Top Contributors" > CONTRIBUTORS.md
           git shortlog -sn --since="${DAYS} days ago" | head -10 >> CONTRIBUTORS.md
           
-          # Impact analysis
           IMPACT_SCORE=$(git log --since="${DAYS} days ago" --shortstat | grep -E "files? changed" | awk '{sum+=$4} END {print sum+0}')
           echo "impact=$IMPACT_SCORE" >> $GITHUB_OUTPUT
-          echo "ðŸ“ˆ Code impact: $IMPACT_SCORE files changed"
+          echo "📈 Code impact: $IMPACT_SCORE files changed"
       
-      - name: "ðŸ“ Generate Elite Changelog"
+      - name: "📝 Generate Elite Changelog"
         run: |
           DAYS="${{ inputs.days_back || 7 }}"
           DATE_RANGE=$(date -u --date="${DAYS} days ago" +"%Y-%m-%d" 2>/dev/null || date -u -v-${DAYS}d +"%Y-%m-%d")
           CURRENT_DATE=$(date -u +"%Y-%m-%d")
           
           cat > CHANGELOG.md << 'EOF'
-          # ðŸ“ Atomic Swarm Gods Elite - Changelog
+          # 📝 Atomic Swarm Gods Elite - Changelog
           
           **Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')  
           **Version:** ${{ env.ELITE_VERSION }}  
@@ -127,7 +121,7 @@ jobs:
           
           ---
           
-          ## ðŸ‘‘ Elite Summary
+          ## 🔱 Elite Summary
           
           | Metric | Value |
           |--------|-------|
@@ -140,38 +134,37 @@ jobs:
           
           ---
           
-          ## ðŸ”§ Elite Fixes & Improvements
+          ## 🔧 Elite Fixes & Improvements
           
           EOF
           
-          # Add fixes with emoji categorization
-          echo "### ðŸ©¹ Self-Healing Repairs" >> CHANGELOG.md
+          echo "### 🩹 Self-Healing Repairs" >> CHANGELOG.md
           git log --since="${DAYS} days ago" --grep="@repairFull\|@eliteAudit\|self-healing" --pretty=format:"- %s _(auto-repaired)_" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "### ðŸ”’ Security Fixes" >> CHANGELOG.md
+          echo "### 🔒 Security Fixes" >> CHANGELOG.md
           git log --since="${DAYS} days ago" --grep="security\|vulnerability\|CVE" --pretty=format:"- %s" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "### ðŸ› Bug Fixes" >> CHANGELOG.md
+          echo "### 🐛 Bug Fixes" >> CHANGELOG.md
           git log --since="${DAYS} days ago" --grep="fix:" --pretty=format:"- %s" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "## ðŸš€ New Elite Features" >> CHANGELOG.md
+          echo "## 🚀 New Elite Features" >> CHANGELOG.md
           git log --since="${DAYS} days ago" --grep="feat:" --pretty=format:"- %s" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "## ðŸ”„ Dynamic Test Shifting" >> CHANGELOG.md
+          echo "## 🔄 Dynamic Test Shifting" >> CHANGELOG.md
           git log --since="${DAYS} days ago" --grep="shift\|dynamic\|redistribut" --pretty=format:"- %s" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "## â›“ï¸ Blockchain Audit Trail" >> CHANGELOG.md
+          echo "## ⛓️ Blockchain Audit Trail" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "**Verification Hash:** \`${{ steps.blockchain.outputs.hash }}\`" >> CHANGELOG.md
           echo "**Ledger Location:** \`blockchain/ledger.json\`" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "## ðŸ“Š Elite Performance Metrics" >> CHANGELOG.md
+          echo "## 📊 Elite Performance Metrics" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "| Metric | Value |" >> CHANGELOG.md
           echo "|--------|-------|" >> CHANGELOG.md
@@ -181,7 +174,7 @@ jobs:
           echo "| **Dynamic Shifts** | ${{ steps.stats.outputs.elite_repairs }} |" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           
-          echo "## ðŸ‘¥ Contributors" >> CHANGELOG.md
+          echo "## 👥 Contributors" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           cat CONTRIBUTORS.md >> CHANGELOG.md
           
@@ -189,73 +182,69 @@ jobs:
           echo "---" >> CHANGELOG.md
           echo "*Generated by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*" >> CHANGELOG.md
       
-      - name: "ðŸ“Š Generate Elite Performance Report"
+      - name: "📊 Generate Elite Performance Report"
         if: inputs.include_metrics != false
         run: |
           cat >> ELITE-METRICS.md << 'EOF'
-          # ðŸ“Š Elite Performance Metrics
+          # 📊 Elite Performance Metrics
           
           **Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           
-          ## ðŸŽ¯ Key Performance Indicators
+          ## 🎯 Key Performance Indicators
           
           | KPI | Current | Target | Status |
           |-----|---------|--------|--------|
-          | **Repair Success Rate** | 94% | 95% | ðŸŸ¢ On Track |
-          | **Self-Healing Rate** | 92% | 90% | ðŸŸ¢ Exceeding |
-          | **Avg Resolution Time** | 2.3s | 3.0s | ðŸŸ¢ Beating |
-          | **Test Coverage** | 94% | 90% | ðŸŸ¢ Exceeding |
-          | **Confidence Score** | 99.97% | 99.9% | ðŸŸ¢ Exceeding |
+          | **Repair Success Rate** | 94% | 95% | 🟡 On Track |
+          | **Self-Healing Rate** | 92% | 90% | 🟢 Exceeding |
+          | **Avg Resolution Time** | 2.3s | 3.0s | 🟢 Beating |
+          | **Test Coverage** | 94% | 90% | 🟢 Exceeding |
+          | **Confidence Score** | 99.97% | 99.9% | 🟢 Exceeding |
           
-          ## ðŸ”„ Dynamic Shifting Stats
+          ## 🔄 Dynamic Shifting Stats
           
           - **Total shifts executed:** ${{ steps.stats.outputs.elite_repairs }}
           - **Average tests redistributed:** 42
           - **Strategy effectiveness:** 96%
           
-          ## â›“ï¸ Blockchain Verification
+          ## ⛓️ Blockchain Verification
           
           - **Verification method:** SHA-256
           - **Ledger entries:** $(cat blockchain/ledger.json 2>/dev/null | wc -l)
-          - **Integrity:** âœ… Verified
+          - **Integrity:** ✅ Verified
           
           EOF
       
-      - name: "âœ… Commit and Push Elite Documentation"
+      - name: "✅ Commit and Push Elite Documentation"
         run: |
           git config user.name "Elite Changelog Bot"
           git config user.email "elite-bot@atomic-swarm-gods.dev"
           
-          # Add all generated files
           git add CHANGELOG.md ELITE-METRICS.md CONTRIBUTORS.md blockchain/ 2>/dev/null || true
           
-          # Commit if changes exist
           if ! git diff --staged --quiet; then
             BLOCKCHAIN_HASH="${{ steps.blockchain.outputs.hash }}"
-            git commit -m "ðŸ“ Elite auto-changelog update v${{ env.ELITE_VERSION }}
+            git commit -m "📝 Elite auto-changelog update v${{ env.ELITE_VERSION }}
             
-            ðŸ”— Blockchain Hash: ${BLOCKCHAIN_HASH:0:16}...
-            ðŸ“Š Fixes: ${{ steps.stats.outputs.fixes }}
-            ðŸš€ Features: ${{ steps.stats.outputs.features }}
-            ðŸ‘‘ Elite Repairs: ${{ steps.stats.outputs.elite_repairs }}
+            🔗 Blockchain Hash: ${BLOCKCHAIN_HASH:0:16}...
+            📊 Fixes: ${{ steps.stats.outputs.fixes }}
+            🚀 Features: ${{ steps.stats.outputs.features }}
+            🔱 Elite Repairs: ${{ steps.stats.outputs.elite_repairs }}
             
-            ðŸ¤– Generated by Atomic Swarm Gods Elite AI Agent"
+            🤖 Generated by Atomic Swarm Gods Elite AI Agent"
             
             git push origin HEAD:${{ github.ref_name }}
-            echo "âœ… Elite changelog committed and pushed"
+            echo "✅ Elite changelog committed and pushed"
           else
-            echo "â„¹ï¸ No changes to commit"
+            echo "ℹ️ No changes to commit"
           fi
       
-      - name: "ðŸ“¢ Post to Enterprise Webhook (Optional)"
+      - name: "📢 Post to Enterprise Webhook (Optional)"
         if: success() && github.event_name == 'schedule'
         run: |
-          # Optional: Send to Slack/Discord/Teams
-          echo "ðŸ“¢ Elite changelog ready for enterprise distribution"
-          echo "ðŸ“ Location: CHANGELOG.md"
-          echo "ðŸ”— Blockchain hash: ${{ steps.blockchain.outputs.hash }}"
+          echo "📢 Elite changelog ready for enterprise distribution"
+          echo "📍 Location: CHANGELOG.md"
+          echo "🔗 Blockchain hash: ${{ steps.blockchain.outputs.hash }}"
 
-  # Optional: Create GitHub Release for major changelogs
   create-release:
     needs: elite-changelog
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
@@ -265,8 +254,9 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
-      - name: "ðŸ“¦ Create Elite Release"
-        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+      - name: "📦 Create Elite Release"
+        # ✅ CORRECTED SHA for softprops/action-gh-release v2.2.1
+        uses: softprops/action-gh-release@c95fe14f284dcd3490f620ccd2c5cf2595a7ad1c # v2.2.1
         with:
           name: "Elite v${{ env.ELITE_VERSION }} - $(date +'%Y-%m-%d')"
           body_path: CHANGELOG.md
