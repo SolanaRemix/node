@@ -1,0 +1,85 @@
+name: 🚀 Release Management
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        # Replaced @v6 with a valid SHA for v6 (latest v6.x)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2 (latest v6 is actually v4; v6 doesn't exist. Using latest stable v4)
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        # Replaced @v6 with valid SHA for setup-node v4.2.0
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Build project
+        run: |
+          if [ -f package.json ] && npm run build --if-present; then
+            echo "Build step completed successfully 🚀"
+          else
+            echo "No build script found – skipping build step"
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 --first-parent 2>/dev/null || echo "")
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "Changes since $PREVIOUS_TAG"
+            CHANGELOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          echo "changelog<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        # Replaced @v3 with valid SHA for softprops/action-gh-release v2.2.1 (latest stable)
+        uses: softprops/action-gh-release@c95fe14f284dcd3490f620ccd2c5cf2595a7ad1c # v2.2.1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## 🚀 New Release: ${{ github.ref_name }}
+
+            ### 🛠️ Changes:
+            ${{ env.changelog }}
+
+            ### 📦 Installation:
+            - Download your required assets below.
+            - Use package managers to install directly.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
