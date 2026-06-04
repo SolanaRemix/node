@@ -1,8 +1,8 @@
-﻿name: "ðŸ¤– Elite AI Agent v1.7 - Self-Healing Oracle"
+name: "🤖 Elite AI Agent v1.7 - Self-Healing Oracle"
 
 on:
   schedule:
-    - cron: '0 */4 * * *'  # Every 4 hours (increased frequency for faster healing)
+    - cron: '0 */4 * * *'  # Every 4 hours
   workflow_dispatch:
     inputs:
       repair_mode:
@@ -71,47 +71,44 @@ jobs:
         with:
           version: 8
       
-      - name: "ðŸ§  Oracle Memory - Load Learning Data"
+      - name: "🧠 Oracle Memory - Load Learning Data"
         run: |
-          echo "ðŸ§  Elite Oracle Memory v${{ env.ELITE_VERSION }} initializing..."
+          echo "🧠 Elite Oracle Memory v${{ env.ELITE_VERSION }} initializing..."
           
-          # Load previous repair patterns
           mkdir -p .oracle-memory
           if [ -f ".oracle-memory/repair-patterns.json" ]; then
-            echo "âœ… Loaded historical repair patterns from memory"
-            cat .oracle-memory/repair-patterns.json | jq -r '.patterns | length' | xargs echo "ðŸ“Š Total patterns:"
+            echo "✅ Loaded historical repair patterns from memory"
+            cat .oracle-memory/repair-patterns.json | jq -r '.patterns | length' | xargs echo "📊 Total patterns:"
           else
-            echo "ðŸ“ No existing memory - initializing fresh oracle"
+            echo "📝 No existing memory - initializing fresh oracle"
             echo '{"patterns":[],"success_rate":0,"last_trained":"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"}' > .oracle-memory/repair-patterns.json
           fi
       
-      - name: "ðŸŽ¯ Elite Risk Assessment"
+      - name: "🎯 Elite Risk Assessment"
         id: risk
         run: |
           CONFIDENCE="${{ inputs.confidence_threshold || env.ML_CONFIDENCE }}"
           
-          # Calculate dynamic risk score based on repository health
           BROKEN_DEPS=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.total' 2>/dev/null || echo "0")
           TEST_FAILURES=$(npm test 2>&1 | grep -c "failing" || echo "0")
           TYPING_ISSUES=$(npx tsc --noEmit 2>&1 | grep -c "error TS" || echo "0")
           
-          # ML risk scoring algorithm
           RISK_SCORE=$(echo "scale=4; ($BROKEN_DEPS * 0.4 + $TEST_FAILURES * 0.3 + $TYPING_ISSUES * 0.3) / 100" | bc)
           if [ -z "$RISK_SCORE" ] || [ "$RISK_SCORE" = "0" ]; then
-            RISK_SCORE="0.15"  # Baseline risk
+            RISK_SCORE="0.15"
           fi
           
           echo "score=$RISK_SCORE" >> $GITHUB_OUTPUT
           echo "confidence=$CONFIDENCE" >> $GITHUB_OUTPUT
           
-          echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
-          echo "â•‘  ðŸŽ¯ ELITE RISK ASSESSMENT                                     â•‘"
-          echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
-          echo "ðŸ“Š Risk Score: $RISK_SCORE (scale 0-1)"
-          echo "ðŸŽ¯ Confidence: $CONFIDENCE (5-nines)"
-          echo "ðŸ”§ Broken deps: $BROKEN_DEPS | Test failures: $TEST_FAILURES | Type issues: $TYPING_ISSUES"
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  🎯 ELITE RISK ASSESSMENT                                     ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo "📊 Risk Score: $RISK_SCORE (scale 0-1)"
+          echo "🎯 Confidence: $CONFIDENCE (5-nines)"
+          echo "🔧 Broken deps: $BROKEN_DEPS | Test failures: $TEST_FAILURES | Type issues: $TYPING_ISSUES"
       
-      - name: "â›“ï¸ Blockchain Audit Preparation"
+      - name: "⛓️ Blockchain Audit Preparation"
         id: blockchain
         if: inputs.blockchain_audit != false
         run: |
@@ -120,13 +117,11 @@ jobs:
           RUN_ID="${{ github.run_id }}"
           RISK_SCORE="${{ steps.risk.outputs.score }}"
           
-          # Generate immutable blockchain hash
           BLOCKCHAIN_DATA="${TIMESTAMP}|${REPO_NAME}|${RUN_ID}|${RISK_SCORE}|${{ secrets.ELITE_SECRET || github.repository_id }}"
           BLOCKCHAIN_HASH=$(echo -n "$BLOCKCHAIN_DATA" | sha256sum | cut -d' ' -f1)
           
           echo "hash=$BLOCKCHAIN_HASH" >> $GITHUB_OUTPUT
           
-          # Record to blockchain ledger
           mkdir -p blockchain/
           cat >> blockchain/ai-agent-ledger.json << EOF
           {
@@ -139,50 +134,47 @@ jobs:
           }
           EOF
           
-          echo "â›“ï¸ Blockchain record created: ${BLOCKCHAIN_HASH:0:32}..."
+          echo "⛓️ Blockchain record created: ${BLOCKCHAIN_HASH:0:32}..."
       
-      - name: "ðŸ” Dynamic Test Shifting Analysis"
+      - name: "🔄 Dynamic Test Shifting Analysis"
         id: shift
         run: |
           STRATEGY="${{ inputs.shift_strategy || 'adaptive' }}"
           
-          # Scan for test files
           TEST_FILES=$(find . -name "*.test.js" -o -name "*.test.ts" -o -name "*.spec.js" -o -name "*.spec.ts" 2>/dev/null | head -20)
           TEST_COUNT=$(echo "$TEST_FILES" | grep -c "." || echo "0")
           
           echo "strategy=$STRATEGY" >> $GITHUB_OUTPUT
           echo "count=$TEST_COUNT" >> $GITHUB_OUTPUT
           
-          echo "ðŸ”„ Dynamic Test Shifting Strategy: $STRATEGY"
-          echo "ðŸ“Š Test files detected: $TEST_COUNT"
+          echo "🔄 Dynamic Test Shifting Strategy: $STRATEGY"
+          echo "📊 Test files detected: $TEST_COUNT"
           
-          # Apply strategy-specific logic
           case "$STRATEGY" in
             chaos)
-              echo "ðŸŒ€ Chaos mode: Randomizing test execution order"
+              echo "🌀 Chaos mode: Randomizing test execution order"
               ;;
             predictive)
-              echo "ðŸ¤– Predictive mode: ML-optimized test ordering"
+              echo "🤖 Predictive mode: ML-optimized test ordering"
               ;;
             weighted)
-              echo "âš–ï¸ Weighted mode: Prioritizing critical tests"
+              echo "⚖️ Weighted mode: Prioritizing critical tests"
               ;;
             adaptive)
-              echo "ðŸŽ¯ Adaptive mode: Auto-selecting optimal strategy"
+              echo "🎯 Adaptive mode: Auto-selecting optimal strategy"
               ;;
           esac
       
-      - name: "ðŸ©¹ Self-Healing Engine"
+      - name: "🩹 Self-Healing Engine"
         id: heal
         run: |
-          echo "ðŸ©¹ Elite Self-Healing Engine v${{ env.ELITE_VERSION }}"
-          echo "ðŸ“Š Target healing rate: ${{ env.SELF_HEALING_RATE }}%"
+          echo "🩹 Elite Self-Healing Engine v${{ env.ELITE_VERSION }}"
+          echo "📊 Target healing rate: ${{ env.SELF_HEALING_RATE }}%"
           
           HEALED_ISSUES=0
           
-          # Auto-heal package.json if missing or corrupted
           if [ ! -f "package.json" ]; then
-            echo "ðŸ”§ Self-healing: Creating missing package.json"
+            echo "🔧 Self-healing: Creating missing package.json"
             cat > package.json << 'EOF'
           {
             "name": "${{ github.event.repository.name }}",
@@ -201,9 +193,8 @@ jobs:
             HEALED_ISSUES=$((HEALED_ISSUES + 1))
           fi
           
-          # Auto-heal tsconfig.json
           if [ ! -f "tsconfig.json" ] && [ -f "package.json" ]; then
-            echo "ðŸ”§ Self-healing: Creating TypeScript configuration"
+            echo "🔧 Self-healing: Creating TypeScript configuration"
             cat > tsconfig.json << 'EOF'
           {
             "compilerOptions": {
@@ -219,76 +210,67 @@ jobs:
             HEALED_ISSUES=$((HEALED_ISSUES + 1))
           fi
           
-          # Auto-heal missing scripts
           if [ -f "package.json" ]; then
             if ! grep -q '"repair"' package.json; then
-              echo "ðŸ”§ Self-healing: Adding repair script"
+              echo "🔧 Self-healing: Adding repair script"
               npx json -I -f package.json -e 'this.scripts.repair="node scripts/repair.js"'
               HEALED_ISSUES=$((HEALED_ISSUES + 1))
             fi
           fi
           
-          # Fix common dependency issues
           if [ -f "package-lock.json" ] && [ -f "pnpm-lock.yaml" ]; then
-            echo "ðŸ”§ Self-healing: Removing duplicate lockfile"
+            echo "🔧 Self-healing: Removing duplicate lockfile"
             rm -f package-lock.json
             HEALED_ISSUES=$((HEALED_ISSUES + 1))
           fi
           
           echo "count=$HEALED_ISSUES" >> $GITHUB_OUTPUT
-          echo "âœ… Self-healed $HEALED_ISSUES issues"
+          echo "✅ Self-healed $HEALED_ISSUES issues"
           
-          # Update oracle memory with healing success
           echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"healed\":$HEALED_ISSUES,\"risk\":${{ steps.risk.outputs.score }}}" >> .oracle-memory/healing-log.json
       
-      - name: "ðŸš€ Elite AI Repair Execution"
+      - name: "🚀 Elite AI Repair Execution"
         run: |
           MODE="${{ inputs.repair_mode || 'full' }}"
-          echo "ðŸ¤– Elite AI Agent executing repair mode: $MODE"
+          echo "🤖 Elite AI Agent executing repair mode: $MODE"
           
-          # Install dependencies with auto-retry
-          npm install || (echo "âš ï¸ Retrying installation..." && npm install --force)
+          npm install || (echo "⚠️ Retrying installation..." && npm install --force)
           
           case "$MODE" in
             predictive)
-              echo "ðŸ¤– Predictive mode: ML-optimized repairs"
+              echo "🤖 Predictive mode: ML-optimized repairs"
               npm audit fix --force || true
               ;;
             healing)
-              echo "ðŸ©¹ Healing mode: Focus on self-healing"
+              echo "🩹 Healing mode: Focus on self-healing"
               npm install --force || true
               ;;
             audit)
-              echo "ðŸ” Audit mode: Security scanning only"
+              echo "🔍 Audit mode: Security scanning only"
               npm audit --json > security-audit.json
               ;;
             shift)
-              echo "ðŸ”„ Shift mode: Dynamic test redistribution"
-              # Reorder test execution based on strategy
+              echo "🔄 Shift mode: Dynamic test redistribution"
               ;;
             full|*)
-              echo "ðŸ¥ Full elite repair mode"
-              # Full repair sequence
+              echo "🏥 Full elite repair mode"
               npm audit fix --force || true
-              npm run build || (echo "âš ï¸ Build failed - attempting repair" && npm install --force && npm run build)
-              npm test || (echo "âš ï¸ Tests failed - self-healing applied")
+              npm run build || (echo "⚠️ Build failed - attempting repair" && npm install --force && npm run build)
+              npm test || (echo "⚠️ Tests failed - self-healing applied")
               ;;
           esac
           
-          # Run type checking if TypeScript is configured
           if [ -f "tsconfig.json" ]; then
-            echo "ðŸ”’ Running TypeScript strict mode verification"
-            npx tsc --noEmit --strict || echo "âš ï¸ Type issues detected - logging for oracle memory"
+            echo "🔒 Running TypeScript strict mode verification"
+            npx tsc --noEmit --strict || echo "⚠️ Type issues detected - logging for oracle memory"
           fi
           
-          # Update package-lock.json if needed
           if [ -f "package.json" ]; then
             npm install --package-lock-only || true
           fi
       
-      - name: "ðŸ§  Oracle Memory - Learn from Repair"
+      - name: "🧠 Oracle Memory - Learn from Repair"
         run: |
-          # Record successful repair patterns
           PATTERN_ID=$(date +%s)
           cat >> .oracle-memory/repair-patterns.json << EOF
           ,{
@@ -302,50 +284,46 @@ jobs:
           }
           EOF
           
-          # Fix JSON array formatting
           sed -i '1s/^/[/; $s/,$/]/' .oracle-memory/repair-patterns.json 2>/dev/null || true
           
-          echo "ðŸ§  Oracle memory updated with new repair pattern #$PATTERN_ID"
+          echo "🧠 Oracle memory updated with new repair pattern #$PATTERN_ID"
           
-          # Calculate learning progress
           PATTERN_COUNT=$(jq '. | length' .oracle-memory/repair-patterns.json 2>/dev/null || echo "0")
-          echo "ðŸ“š Total learned patterns: $PATTERN_COUNT"
+          echo "📚 Total learned patterns: $PATTERN_COUNT"
       
-      - name: "âœ… Commit Elite AI Agent Changes"
+      - name: "✅ Commit Elite AI Agent Changes"
         run: |
           git config user.name "Elite AI Agent v${{ env.ELITE_VERSION }}"
           git config user.email "elite-ai@atomic-swarm-gods.dev"
           
-          # Add all changes
           git add . || true
           git add .oracle-memory/ blockchain/ 2>/dev/null || true
           
-          # Check if there are changes to commit
           if ! git diff --staged --quiet; then
             BLOCKCHAIN_HASH="${{ steps.blockchain.outputs.hash }}"
             HEALED_COUNT="${{ steps.heal.outputs.count }}"
             
-            git commit -m "ðŸ¤– Elite AI Agent v${{ env.ELITE_VERSION }}: Auto-repair executed
+            git commit -m "🤖 Elite AI Agent v${{ env.ELITE_VERSION }}: Auto-repair executed
             
-            ðŸ©¹ Self-healed: $HEALED_COUNT issues
-            ðŸŽ¯ Risk score: ${{ steps.risk.outputs.score }}
-            â›“ï¸ Blockchain: ${BLOCKCHAIN_HASH:0:16}...
-            ðŸ”„ Strategy: ${{ inputs.shift_strategy || 'adaptive' }}
-            ðŸ§  Oracle memory: Updated with repair pattern
+            🩹 Self-healed: $HEALED_COUNT issues
+            🎯 Risk score: ${{ steps.risk.outputs.score }}
+            ⛓️ Blockchain: ${BLOCKCHAIN_HASH:0:16}...
+            🔄 Strategy: ${{ inputs.shift_strategy || 'adaptive' }}
+            🧠 Oracle memory: Updated with repair pattern
             
-            ðŸ¤– Autonomous repair by Atomic Swarm Gods Elite AI Agent"
+            🤖 Autonomous repair by Atomic Swarm Gods Elite AI Agent"
             
             git push origin HEAD:${{ github.ref_name }}
-            echo "âœ… Elite AI Agent changes committed and pushed"
+            echo "✅ Elite AI Agent changes committed and pushed"
           else
-            echo "â„¹ï¸ No changes detected - repository is healthy"
+            echo "ℹ️ No changes detected - repository is healthy"
           fi
       
-      - name: "ðŸ“Š Generate Elite Performance Report"
+      - name: "📊 Generate Elite Performance Report"
         if: success()
         run: |
           cat >> .oracle-memory/performance-log.md << EOF
-          ## ðŸ“Š Elite AI Agent Performance Report
+          ## 📊 Elite AI Agent Performance Report
           
           **Run ID:** ${{ github.run_id }}
           **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -366,25 +344,24 @@ jobs:
           *Generated by Atomic Swarm Gods Elite AI Agent v${{ env.ELITE_VERSION }}*
           EOF
       
-      - name: "ðŸ’¬ Post-Repair Summary"
+      - name: "💬 Post-Repair Summary"
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
-          echo "â•‘  ðŸ¤– ELITE AI AGENT v${{ env.ELITE_VERSION }} - REPAIR COMPLETE     â•‘"
-          echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  🤖 ELITE AI AGENT v${{ env.ELITE_VERSION }} - REPAIR COMPLETE     ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
           echo ""
-          echo "ðŸ“Š Repair Summary:"
-          echo "  â€¢ Self-healed issues: ${{ steps.heal.outputs.count }}"
-          echo "  â€¢ Risk score: ${{ steps.risk.outputs.score }}"
-          echo "  â€¢ Confidence: ${{ inputs.confidence_threshold || env.ML_CONFIDENCE }} (5-nines)"
-          echo "  â€¢ Blockchain hash: ${BLOCKCHAIN_HASH:0:32}..."
+          echo "📊 Repair Summary:"
+          echo "  • Self-healed issues: ${{ steps.heal.outputs.count }}"
+          echo "  • Risk score: ${{ steps.risk.outputs.score }}"
+          echo "  • Confidence: ${{ inputs.confidence_threshold || env.ML_CONFIDENCE }} (5-nines)"
+          echo "  • Blockchain hash: ${BLOCKCHAIN_HASH:0:32}..."
           echo ""
-          echo "ðŸ§  Oracle memory: Pattern recorded"
-          echo "ðŸ”„ Next scheduled run: In 4 hours"
+          echo "🧠 Oracle memory: Pattern recorded"
+          echo "🔄 Next scheduled run: In 4 hours"
           echo ""
-          echo "âœ… Repository health restored to elite standards"
+          echo "✅ Repository health restored to elite standards"
 
-  # Optional: Create issue for critical issues
   escalate-critical:
     needs: elite-oracle
     if: needs.elite-oracle.outputs.risk_score > 0.7
@@ -392,7 +369,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: "ðŸš¨ Create escalation issue"
+      - name: "🚨 Create escalation issue"
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
@@ -402,8 +379,8 @@ jobs:
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `ðŸš¨ Elite AI Agent: High Risk Detected (${(parseFloat(riskScore) * 100).toFixed(1)}%)`,
-              body: `## ðŸš¨ Critical Risk Alert
+              title: `🚨 Elite AI Agent: High Risk Detected (${(parseFloat(riskScore) * 100).toFixed(1)}%)`,
+              body: `## 🚨 Critical Risk Alert
               
               **Risk Score:** ${(parseFloat(riskScore) * 100).toFixed(1)}% (threshold: 70%)
               **Blockchain Hash:** \`${blockchainHash}\`
