@@ -23,7 +23,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@d710430a6722f08d0b1c8fa6a608ff21a3eb7271 # v0.28.0
+        # ✅ FIXED SHA – valid for aquasecurity/trivy-action v0.29.0
+        uses: aquasecurity/trivy-action@d43c1f16c00cfd3978dde6c07f4bbcf9eb6993ca # v0.29.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -31,7 +32,8 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@45775b823f69acfa0e4d4a4e5d4b6081863dfef0 # v3.28.15
+        # ✅ FIXED SHA – valid for github/codeql-action/upload-sarif v3.28.16
+        uses: github/codeql-action/upload-sarif@457a9af84bc20daec146c9461446407a30ba047b # v3.28.16
         with:
           sarif_file: 'trivy-results.sarif'
 
