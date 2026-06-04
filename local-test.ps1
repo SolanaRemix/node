@@ -60,9 +60,9 @@ function Write-Info {
 function Write-Section {
     param([string]$Title)
     Write-Host ""
-    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor DarkCyan
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host $Title -ForegroundColor Cyan
-    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor DarkCyan
+    Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 }
 
 # ============================================================
@@ -89,6 +89,7 @@ Write-Section "🔧 PHASE 1: Environment Validation"
 # Node.js version check
 try {
     $nodeVersion = node --version 2>$null
+    if (-not $nodeVersion) { throw "Node.js not found" }
     $nodeMajor = $nodeVersion -replace 'v','' -replace '\..*',''
     if ($nodeMajor -ge 18 -and $nodeMajor -le 24) {
         Write-Success "Node.js version $nodeVersion (supported: 18-24)"
@@ -102,6 +103,7 @@ try {
 # Detect package manager
 $usePNPM = Get-Command pnpm -ErrorAction SilentlyContinue
 $useNPM = Get-Command npm -ErrorAction SilentlyContinue
+$PM = $null
 
 if ($usePNPM) {
     $PM = "pnpm"
@@ -113,6 +115,7 @@ if ($usePNPM) {
     Write-Success "Using NPM v$PM_VERSION"
 } else {
     Write-Fail "No package manager found (pnpm or npm)"
+    exit 1
 }
 
 # Check git
@@ -221,9 +224,8 @@ if (-not $SkipBuild) {
     }
     Write-Success "Build complete"
     
-    # Verify build output
     if (Test-Path "dist/index.js") {
-        $buildSize = (Get-Item "dist/index.js").Length / 1KB
+        $buildSize = [math]::Round((Get-Item "dist/index.js").Length / 1KB, 2)
         Write-Success "Build output found (${buildSize}KB)"
     } else {
         Write-Warning "dist/index.js not found"
@@ -285,7 +287,6 @@ Write-Success "Format complete"
 # ============================================================
 Write-Section "👑 PHASE 8: Elite Features Validation"
 
-# Check blockchain directory
 if (Test-Path "blockchain") {
     $blockCount = (Get-ChildItem "blockchain" -Filter "*.json" -ErrorAction SilentlyContinue).Count
     Write-Success "Blockchain directory exists ($blockCount blocks)"
@@ -293,21 +294,18 @@ if (Test-Path "blockchain") {
     Write-Info "Blockchain directory will be created on first run"
 }
 
-# Check oracle memory
 if (Test-Path "oracle-memory.json") {
     Write-Success "Oracle memory file exists"
 } else {
     Write-Info "Oracle memory will be created on first use"
 }
 
-# Check surgery room
 if (Test-Path "surgery-room") {
     Write-Success "Surgery room directory exists"
 } else {
     Write-Fail "Surgery room directory missing"
 }
 
-# Check dynamic test shifter
 if (Test-Path "surgery-room/DynamicTestShifter.js") {
     Write-Success "Dynamic test shifter present"
 } else {
@@ -321,29 +319,33 @@ Write-Section "🏥 PHASE 9: Server Startup"
 
 Write-Info "Starting server on port 3001..."
 $serverProcess = Start-Process -FilePath "node" -ArgumentList "server.js" -PassThru -NoNewWindow
-Start-Sleep -Seconds 3
+Start-Sleep -Seconds 4   # Give server more time to initialize
 
-# Check health endpoint
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -UseBasicParsing -ErrorAction Stop
+    $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
         Write-Success "Server is running"
         Write-Info "Dashboard: http://localhost:3001"
         Write-Info "API: http://localhost:3001/api/surgery/records"
         
-        # Check elite features
-        $healthData = $response.Content | ConvertFrom-Json
-        if ($healthData.version -eq $ELITE_VERSION) {
-            Write-Success "Elite version $ELITE_VERSION detected"
+        # Safely check elite version
+        try {
+            $healthData = $response.Content | ConvertFrom-Json
+            if ($healthData.version -and $healthData.version -eq $ELITE_VERSION) {
+                Write-Success "Elite version $ELITE_VERSION detected"
+            } elseif ($healthData.version) {
+                Write-Info "Detected version: $($healthData.version)"
+            }
+        } catch {
+            Write-Info "Health endpoint returned non-JSON response"
         }
     } else {
-        Write-Warning "Server health check failed"
+        Write-Warning "Server health check returned status $($response.StatusCode)"
     }
 } catch {
-    Write-Warning "Server not responding (may not be critical)"
+    Write-Warning "Server not responding: $($_.Exception.Message)"
 }
 
-# Don't kill server - let it run for manual testing
 Write-Info "Server running in background (PID: $($serverProcess.Id))"
 Write-Info "To stop: Stop-Process -Id $($serverProcess.Id)"
 
