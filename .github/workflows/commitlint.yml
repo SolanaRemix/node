@@ -24,9 +24,14 @@ jobs:
           node-version: '22'
 
       - name: Install commitlint
-        run: |
-          npm install --save-dev @commitlint/config-conventional @commitlint/cli
+        run: npm install --save-dev @commitlint/config-conventional @commitlint/cli
 
       - name: Validate PR commits
         run: |
-          npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          if [ -n "$BASE_SHA" ] && [ -n "$HEAD_SHA" ]; then
+            npx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+          else
+            echo "⚠️ No commit range – skipping validation"
+          fi
