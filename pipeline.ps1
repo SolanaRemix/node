@@ -27,6 +27,18 @@ $env:BLOCKCHAIN_AUDIT = if ($BlockchainAudit) { "true" } else { "false" }
 $env:DYNAMIC_SHIFTING = if ($DynamicShift) { "true" } else { "false" }
 $env:NODE_ENV = $Environment
 
+# Helper: Run command and ignore exit code (for non-critical steps)
+function Invoke-CommandSafe {
+    param([string]$Command)
+    try {
+        Invoke-Expression $Command
+        return $true
+    } catch {
+        Write-Host "⚠️ Command failed: $Command" -ForegroundColor Yellow
+        return $false
+    }
+}
+
 # ============================================================
 # Header
 # ============================================================
@@ -72,22 +84,24 @@ if ($Clean) {
 # ============================================================
 Write-Host "📦 Installing dependencies..." -ForegroundColor Yellow
 
-# Detect package manager
 $hasPnpm = Test-Path "pnpm-lock.yaml"
 $hasYarn = Test-Path "yarn.lock"
 
 if ($hasPnpm) {
     Write-Host "  📦 Using pnpm..." -ForegroundColor Gray
     pnpm install --frozen-lockfile
+    $installExit = $LASTEXITCODE
 } elseif ($hasYarn) {
     Write-Host "  📦 Using yarn..." -ForegroundColor Gray
     yarn install --frozen-lockfile
+    $installExit = $LASTEXITCODE
 } else {
     Write-Host "  📦 Using npm..." -ForegroundColor Gray
     npm ci --no-audit --no-fund
+    $installExit = $LASTEXITCODE
 }
 
-if ($LASTEXITCODE -ne 0) {
+if ($installExit -ne 0) {
     Write-Host "⚠️ Installation had warnings, continuing..." -ForegroundColor Yellow
 }
 Write-Host "✅ Dependencies installed" -ForegroundColor Green
@@ -99,7 +113,8 @@ Write-Host ""
 if (-not $SkipBuild) {
     Write-Host "🔍 Running TypeScript type check..." -ForegroundColor Yellow
     npm run typecheck
-    if ($LASTEXITCODE -ne 0) {
+    $typeExit = $LASTEXITCODE
+    if ($typeExit -ne 0) {
         Write-Host "❌ Type check failed!" -ForegroundColor Red
         exit 1
     }
@@ -113,13 +128,13 @@ if (-not $SkipBuild) {
 if (-not $SkipBuild) {
     Write-Host "🔨 Building project..." -ForegroundColor Yellow
     npm run build
-    if ($LASTEXITCODE -ne 0) {
+    $buildExit = $LASTEXITCODE
+    if ($buildExit -ne 0) {
         Write-Host "❌ Build failed!" -ForegroundColor Red
         exit 1
     }
     Write-Host "✅ Build complete" -ForegroundColor Green
     
-    # Verify build output
     if (Test-Path "dist/index.js") {
         Write-Host "  ✓ dist/index.js created" -ForegroundColor Green
     } else {
@@ -141,7 +156,8 @@ if (-not $SkipTests) {
         npm test
     }
     
-    if ($LASTEXITCODE -ne 0) {
+    $testExit = $LASTEXITCODE
+    if ($testExit -ne 0) {
         Write-Host "⚠️ Tests had failures, but continuing..." -ForegroundColor Yellow
     } else {
         Write-Host "✅ All tests passed" -ForegroundColor Green
@@ -150,11 +166,12 @@ if (-not $SkipTests) {
 }
 
 # ============================================================
-# 6. Lint & Format
+# 6. Lint & Format (non-blocking)
 # ============================================================
 Write-Host "✨ Running linter and formatter..." -ForegroundColor Yellow
-npm run lint -- --fix --quiet 2>$null
-npm run format 2>$null
+# Use safe wrapper so failures don't stop the pipeline
+Invoke-CommandSafe "npm run lint -- --fix --quiet 2>nul"
+Invoke-CommandSafe "npm run format 2>nul"
 Write-Host "✅ Lint complete" -ForegroundColor Green
 Write-Host ""
 
@@ -163,11 +180,18 @@ Write-Host ""
 # ============================================================
 if (-not (Test-Path "oracle-memory.json")) {
     Write-Host "🧠 Initializing Oracle Memory..." -ForegroundColor Yellow
-    node -e "
-    import('./dist/index.js').then(async (module) => {
-        console.log('✅ Oracle Memory initialized');
-    }).catch(() => console.log('⚠️ Oracle memory will be created on first use'));
-    "
+    # Use a simple node command that won't fail if dist doesn't exist
+    $initScript = @'
+const fs = require('fs');
+const oraclePath = 'oracle-memory.json';
+if (!fs.existsSync(oraclePath)) {
+    fs.writeFileSync(oraclePath, JSON.stringify({ patterns: [], success_rate: 0, last_trained: new Date().toISOString() }, null, 2));
+    console.log('✅ Oracle Memory initialized');
+} else {
+    console.log('ℹ️ Oracle Memory already exists');
+}
+'@
+    node -e "$initScript"
     Write-Host "✅ Oracle Memory ready" -ForegroundColor Green
     Write-Host ""
 }
@@ -183,13 +207,16 @@ if (-not $SkipServer) {
     Write-Host "  ⛓️ Blockchain: http://localhost:3001/blockchain" -ForegroundColor Cyan
     Write-Host ""
     
-    # Open browser on supported platforms
-    if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        Start-Process "http://localhost:3001"
-    } elseif ($IsMacOS) {
-        open "http://localhost:3001"
-    } elseif ($IsLinux) {
-        xdg-open "http://localhost:3001" 2>$null
+    # Open browser only if not in CI and if the command exists
+    $isCI = $env:CI -eq "true"
+    if (-not $isCI) {
+        if ($IsWindows -or $env:OS -eq "Windows_NT") {
+            try { Start-Process "http://localhost:3001" } catch { Write-Host "⚠️ Could not open browser" -ForegroundColor Yellow }
+        } elseif ($IsMacOS) {
+            try { open "http://localhost:3001" } catch { Write-Host "⚠️ Could not open browser" -ForegroundColor Yellow }
+        } elseif ($IsLinux) {
+            try { xdg-open "http://localhost:3001" 2>$null } catch { Write-Host "⚠️ Could not open browser" -ForegroundColor Yellow }
+        }
     }
     
     # Start the server
