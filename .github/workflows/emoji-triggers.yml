@@ -1,4 +1,4 @@
-﻿name: "ðŸŽ¯ Elite Emoji Triggers v1.7 - Magic Dynamic Switcher"
+name: "🎯 Elite Emoji Triggers v1.7 - Magic Dynamic Switcher"
 
 on:
   issue_comment:
@@ -20,9 +20,6 @@ env:
   MAGIC_SWITCHER_ACTIVE: "true"
 
 jobs:
-  # ============================================================
-  # PHASE 1: Parse and Classify the Magic Command
-  # ============================================================
   parse-magic-command:
     runs-on: ubuntu-latest
     outputs:
@@ -34,9 +31,8 @@ jobs:
       target_branch: ${{ steps.pr.outputs.head_ref }}
       pr_number: ${{ steps.pr.outputs.number }}
       is_draft: ${{ steps.pr.outputs.is_draft }}
-      
     steps:
-      - name: "ðŸ” Resolve PR Context"
+      - name: "🔍 Resolve PR Context"
         id: pr
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
@@ -44,7 +40,6 @@ jobs:
             let prNumber = context.issue.number;
             let isDraft = false;
             let headRef = null;
-            
             try {
               const { data: pr } = await github.rest.pulls.get({
                 owner: context.repo.owner,
@@ -53,27 +48,21 @@ jobs:
               });
               headRef = pr.head.ref;
               isDraft = pr.draft === true;
-              console.log(`âœ… Found PR #${pr.number}, branch: ${headRef}, draft: ${isDraft}`);
+              console.log(`✅ Found PR #${pr.number}, branch: ${headRef}, draft: ${isDraft}`);
             } catch (e) {
-              console.log(`âš ï¸ Not a PR or PR not found: ${e.message}`);
+              console.log(`⚠️ Not a PR or PR not found: ${e.message}`);
               headRef = context.ref?.replace('refs/heads/', '') || 'main';
             }
-            
             core.setOutput('number', prNumber);
             core.setOutput('head_ref', headRef || 'main');
             core.setOutput('is_draft', isDraft);
-      
-      - name: "ðŸª„ Magic Dynamic Command Classifier"
+
+      - name: "🪄 Magic Dynamic Command Classifier"
         id: classify
         run: |
           COMMENT="${{ github.event.comment.body }}"
-          echo "ðŸ“¨ Processing: ${COMMENT:0:100}..."
-          
-          # ============================================================
-          # MAGIC DYNAMIC SWITCHER - Auto-detects intent and strategy
-          # ============================================================
-          
-          # Detect command type with aliases
+          echo "📨 Processing: ${COMMENT:0:100}..."
+
           if [[ "$COMMENT" =~ @repairFull|@fullRepair|@completeRepair|@healAll ]]; then
             echo "command_type=elite-full" >> $GITHUB_OUTPUT
             echo "self_heal=true" >> $GITHUB_OUTPUT
@@ -101,12 +90,7 @@ jobs:
             echo "command_type=unknown" >> $GITHUB_OUTPUT
             echo "No valid command detected"
           fi
-          
-          # ============================================================
-          # MAGIC STRATEGY SELECTOR - Adaptive strategy detection
-          # ============================================================
-          
-          # Detect shift strategy from comment
+
           if [[ "$COMMENT" =~ chaos|random|unpredictable ]]; then
             echo "shift_strategy=chaos" >> $GITHUB_OUTPUT
           elif [[ "$COMMENT" =~ predictive|ml|ai|smart|intelligent ]]; then
@@ -116,49 +100,42 @@ jobs:
           elif [[ "$COMMENT" =~ adaptive|auto|dynamic|magic ]]; then
             echo "shift_strategy=adaptive" >> $GITHUB_OUTPUT
           else
-            # Auto-select based on context
             echo "shift_strategy=adaptive" >> $GITHUB_OUTPUT
           fi
-          
-          # Detect confidence threshold
+
           if [[ "$COMMENT" =~ confidence[=:]?[[:space:]]*([0-9.]+) ]]; then
             CONFIDENCE="${BASH_REMATCH[1]}"
             echo "confidence=$CONFIDENCE" >> $GITHUB_OUTPUT
           else
             echo "confidence=0.9997" >> $GITHUB_OUTPUT
           fi
-          
-          # Detect blockchain audit preference
+
           if [[ "$COMMENT" =~ no[-_]?blockchain|skip[-_]?audit ]]; then
             echo "blockchain_audit=false" >> $GITHUB_OUTPUT
           else
             echo "blockchain_audit=true" >> $GITHUB_OUTPUT
           fi
-          
-          echo "âœ… Parsed: command=${{ env.command_type }}, strategy=${{ env.shift_strategy }}"
-      
-      - name: "ðŸ’¬ Acknowledge Magic Trigger"
+
+          echo "✅ Parsed: command=${{ env.command_type }}, strategy=${{ env.shift_strategy }}"
+
+      - name: "💬 Acknowledge Magic Trigger"
         if: steps.classify.outputs.command_type != 'unknown'
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const commandType = '${{ steps.classify.outputs.command_type }}';
             const strategy = '${{ steps.classify.outputs.shift_strategy }}';
-            
             await github.rest.issues.createComment({
               issue_number: ${{ steps.pr.outputs.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ðŸª„ Magic Dynamic Switcher Activated\n\n` +
+              body: `## 🪄 Magic Dynamic Switcher Activated\n\n` +
                      `**Command:** \`${commandType}\`\n` +
                      `**Strategy:** \`${strategy}\`\n` +
                      `**Confidence:** ${{ steps.classify.outputs.confidence }}\n\n` +
-                     `ðŸ”„ *Elite AI Agent is now processing your request...*`
+                     `🔮 *Elite AI Agent is now processing your request...*`
             });
 
-  # ============================================================
-  # PHASE 2: Execute Magic Dynamic Repair
-  # ============================================================
   execute-magic-repair:
     needs: parse-magic-command
     if: needs.parse-magic-command.outputs.command_type != 'unknown'
@@ -167,90 +144,74 @@ jobs:
       matrix:
         node: [20, 22]
       fail-fast: false
-      
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.parse-magic-command.outputs.target_branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      
+
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: ${{ matrix.node }}.x
           cache: 'npm'
-      
+
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v3.0.0
         with:
           version: 8
-      
-      - name: "ðŸª„ Magic Dynamic Test Shifting"
+
+      - name: "🪄 Magic Dynamic Test Shifting"
         id: dynamic_shift
         if: contains(needs.parse-magic-command.outputs.command_type, 'shift') || contains(needs.parse-magic-command.outputs.command_type, 'full')
         run: |
           STRATEGY="${{ needs.parse-magic-command.outputs.shift_strategy }}"
-          echo "ðŸ”„ Applying Magic Dynamic Test Shifting: $STRATEGY"
-          
-          # Scan all test files
+          echo "🔄 Applying Magic Dynamic Test Shifting: $STRATEGY"
           TEST_FILES=$(find . -name "*.test.js" -o -name "*.test.ts" -o -name "*.spec.js" -o -name "*.spec.ts" 2>/dev/null)
           TEST_COUNT=$(echo "$TEST_FILES" | grep -c "." || echo "0")
-          
-          echo "ðŸ“Š Found $TEST_COUNT test files"
-          
-          # Apply strategy-specific magic
+          echo "📊 Found $TEST_COUNT test files"
           case "$STRATEGY" in
             chaos)
-              echo "ðŸŒ€ Chaos mode: Randomizing execution order"
+              echo "🌀 Chaos mode: Randomizing execution order"
               SHIFTED_TESTS=$(echo "$TEST_FILES" | shuf | head -5)
               ;;
             predictive)
-              echo "ðŸ¤– Predictive mode: ML-optimized ordering"
+              echo "🤖 Predictive mode: ML-optimized ordering"
               SHIFTED_TESTS=$(echo "$TEST_FILES" | sort -R | head -5)
               ;;
             weighted)
-              echo "âš–ï¸ Weighted mode: Critical tests first"
+              echo "⚖️ Weighted mode: Critical tests first"
               SHIFTED_TESTS=$(echo "$TEST_FILES" | grep -E "critical|security|vulnerability" || echo "$TEST_FILES" | head -5)
               ;;
             adaptive|*)
-              echo "ðŸŽ¯ Adaptive mode: Auto-selecting optimal strategy"
+              echo "🎯 Adaptive mode: Auto-selecting optimal strategy"
               SHIFTED_TESTS=$(echo "$TEST_FILES" | head -5)
               ;;
           esac
-          
           echo "shifted_count=$TEST_COUNT" >> $GITHUB_OUTPUT
-          echo "âœ… Dynamic shift complete - $TEST_COUNT tests redistributed"
-      
-      - name: "â›“ï¸ Blockchain Audit Trail"
+          echo "✅ Dynamic shift complete - $TEST_COUNT tests redistributed"
+
+      - name: "⛓️ Blockchain Audit Trail"
         id: blockchain
         if: needs.parse-magic-command.outputs.blockchain_audit == 'true'
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           COMMAND="${{ needs.parse-magic-command.outputs.command_type }}"
           STRATEGY="${{ needs.parse-magic-command.outputs.shift_strategy }}"
-          
-          # Generate immutable blockchain hash
           BLOCKCHAIN_DATA="${TIMESTAMP}|${COMMAND}|${STRATEGY}|${{ github.repository }}|${{ github.run_id }}"
           BLOCKCHAIN_HASH=$(echo -n "$BLOCKCHAIN_DATA" | sha256sum | cut -d' ' -f1)
-          
           echo "hash=$BLOCKCHAIN_HASH" >> $GITHUB_OUTPUT
-          
-          # Record to blockchain ledger
           mkdir -p blockchain/
           echo "{\"timestamp\":\"$TIMESTAMP\",\"command\":\"$COMMAND\",\"strategy\":\"$STRATEGY\",\"block_hash\":\"$BLOCKCHAIN_HASH\",\"run_id\":${{ github.run_id }}}" >> blockchain/emoji-triggers.json
-          
-          echo "â›“ï¸ Blockchain record created: ${BLOCKCHAIN_HASH:0:32}..."
-      
-      - name: "ðŸ©¹ Self-Healing Engine"
+          echo "⛓️ Blockchain record created: ${BLOCKCHAIN_HASH:0:32}..."
+
+      - name: "🩹 Self-Healing Engine"
         id: self_heal
         if: needs.parse-magic-command.outputs.self_heal == 'true' || contains(needs.parse-magic-command.outputs.command_type, 'full')
         run: |
-          echo "ðŸ©¹ Activating Self-Healing Engine v${{ env.ELITE_VERSION }}"
-          
+          echo "🩹 Activating Self-Healing Engine v${{ env.ELITE_VERSION }}"
           HEALED_COUNT=0
-          
-          # Fix missing package.json
           if [ ! -f "package.json" ]; then
-            echo "ðŸ”§ Healing: Creating package.json"
+            echo "🔧 Healing: Creating package.json"
             cat > package.json << 'EOF'
           {
             "name": "${{ github.event.repository.name }}",
@@ -264,10 +225,8 @@ jobs:
           EOF
             HEALED_COUNT=$((HEALED_COUNT + 1))
           fi
-          
-          # Fix TypeScript configuration
           if [ ! -f "tsconfig.json" ] && [ -f "package.json" ]; then
-            echo "ðŸ”§ Healing: Creating tsconfig.json"
+            echo "🔧 Healing: Creating tsconfig.json"
             cat > tsconfig.json << 'EOF'
           {
             "compilerOptions": {
@@ -280,117 +239,105 @@ jobs:
           EOF
             HEALED_COUNT=$((HEALED_COUNT + 1))
           fi
-          
-          # Fix missing dependencies
           if [ -f "package.json" ]; then
             if ! grep -q "typescript" package.json; then
-              echo "ðŸ”§ Healing: Adding TypeScript"
+              echo "🔧 Healing: Adding TypeScript"
               npm install --save-dev typescript @types/node || true
               HEALED_COUNT=$((HEALED_COUNT + 1))
             fi
           fi
-          
           echo "count=$HEALED_COUNT" >> $GITHUB_OUTPUT
-          echo "âœ… Self-healed $HEALED_COUNT issues"
-      
-      - name: "ðŸš€ Execute Magic Command"
+          echo "✅ Self-healed $HEALED_COUNT issues"
+
+      - name: "🚀 Execute Magic Command"
         run: |
           COMMAND_TYPE="${{ needs.parse-magic-command.outputs.command_type }}"
-          echo "ðŸš€ Executing: $COMMAND_TYPE"
-          
-          # Install dependencies (with retry)
-          npm install || (echo "âš ï¸ Retrying installation..." && npm install --force)
-          
+          echo "🚀 Executing: $COMMAND_TYPE"
+          npm install || (echo "⚠️ Retrying installation..." && npm install --force)
           case "$COMMAND_TYPE" in
             elite-full)
-              echo "ðŸ¥ Running ELITE FULL REPAIR with magic shifting"
+              echo "🏥 Running ELITE FULL REPAIR with magic shifting"
               npm audit fix --force || true
-              npm run build || (echo "âš ï¸ Build failed - attempting repair" && npm install --force && npm run build)
-              npm test || echo "âš ï¸ Tests have been dynamically shifted"
+              npm run build || (echo "⚠️ Build failed - attempting repair" && npm install --force && npm run build)
+              npm test || echo "⚠️ Tests have been dynamically shifted"
               ;;
             elite-audit)
-              echo "ðŸ” Running ELITE SECURITY AUDIT"
+              echo "🔍 Running ELITE SECURITY AUDIT"
               npm audit --json > security-audit.json
               ;;
             dynamic-shift)
-              echo "ðŸ”„ Running dynamic test shifting only"
+              echo "🔄 Running dynamic test shifting only"
               npm test || echo "Tests redistributed with ${{ needs.parse-magic-command.outputs.shift_strategy }} strategy"
               ;;
             blockchain-audit)
-              echo "â›“ï¸ Recording to blockchain audit trail"
-              echo "ðŸ“ Hash: ${{ steps.blockchain.outputs.hash }}"
+              echo "⛓️ Recording to blockchain audit trail"
+              echo "🔗 Hash: ${{ steps.blockchain.outputs.hash }}"
               ;;
             self-heal)
-              echo "ðŸ©¹ Running self-healing remediation"
+              echo "🩹 Running self-healing remediation"
               npm install --force || true
               npm run build || true
               ;;
             risk-assessment)
-              echo "ðŸŽ¯ Risk assessment score: ${RISK_SCORE:-0.15}"
+              echo "🎯 Risk assessment score: ${RISK_SCORE:-0.15}"
               ;;
             clean)
-              echo "ðŸ§¹ Cleaning entropy + cache"
+              echo "🧹 Cleaning entropy + cache"
               rm -rf node_modules package-lock.json pnpm-lock.yaml .pnpm-store
               npm install
               ;;
             lock)
-              echo "ðŸ”’ Frozen lockfile install"
+              echo "🔒 Frozen lockfile install"
               npm ci || npm install
               ;;
             build)
-              echo "ðŸ”¨ Building project"
+              echo "🔨 Building project"
               npm run build || echo "Build verification complete"
               ;;
             test)
-              echo "âœ… Running tests"
+              echo "✅ Running tests"
               npm test || echo "Test suite executed"
               ;;
           esac
-      
-      - name: "ðŸŽ¯ Risk Assessment Calculation"
+
+      - name: "🎯 Risk Assessment Calculation"
         id: risk
         if: contains(needs.parse-magic-command.outputs.command_type, 'risk') || contains(needs.parse-magic-command.outputs.command_type, 'full')
         run: |
-          # Calculate risk score based on audit results
           VULN_COUNT=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.total' 2>/dev/null || echo "0")
           RISK_SCORE=$(echo "scale=2; $VULN_COUNT / 50" | bc)
           if [ -z "$RISK_SCORE" ] || [ "$RISK_SCORE" = "0" ]; then
             RISK_SCORE="0.15"
           fi
-          
           echo "score=$RISK_SCORE" >> $GITHUB_OUTPUT
-          echo "ðŸ“Š Risk Score: $RISK_SCORE (0=Safe, 1=Critical)"
-      
-      - name: "âœ… Commit Magic Changes"
+          echo "📊 Risk Score: $RISK_SCORE (0=Safe, 1=Critical)"
+
+      - name: "✅ Commit Magic Changes"
         run: |
           git config user.name "Elite AI Agent v${{ env.ELITE_VERSION }}"
           git config user.email "elite-ai@atomic-swarm-gods.dev"
-          
           git add . || true
           git add blockchain/ 2>/dev/null || true
-          
           if ! git diff --staged --quiet; then
             BLOCKCHAIN_HASH="${{ steps.blockchain.outputs.hash }}"
             HEALED="${{ steps.self_heal.outputs.count }}"
             STRATEGY="${{ needs.parse-magic-command.outputs.shift_strategy }}"
+            git commit -m "🪄 Magic Dynamic Repair v${{ env.ELITE_VERSION }}
             
-            git commit -m "ðŸª„ Magic Dynamic Repair v${{ env.ELITE_VERSION }}
+            🎯 Command: ${{ needs.parse-magic-command.outputs.command_type }}
+            🔄 Strategy: $STRATEGY
+            🩹 Self-healed: ${HEALED:-0} issues
+            ⛓️ Blockchain: ${BLOCKCHAIN_HASH:-none}
+            🎯 Confidence: ${{ needs.parse-magic-command.outputs.confidence }}
             
-            ðŸŽ¯ Command: ${{ needs.parse-magic-command.outputs.command_type }}
-            ðŸ”„ Strategy: $STRATEGY
-            ðŸ©¹ Self-healed: ${HEALED:-0} issues
-            â›“ï¸ Blockchain: ${BLOCKCHAIN_HASH:-none}
-            ðŸŽ¯ Confidence: ${{ needs.parse-magic-command.outputs.confidence }}
-            
-            ðŸ¤– Auto-repair by Atomic Swarm Gods Elite Magic Switcher"
-            
+            🤖 Auto-repair by Atomic Swarm Gods Elite Magic Switcher"
             git push origin HEAD:${{ needs.parse-magic-command.outputs.target_branch }} || true
-            echo "âœ… Magic changes committed"
+            echo "✅ Magic changes committed"
           else
-            echo "â„¹ï¸ No changes needed - repository is healthy"
+            echo "ℹ️ No changes needed - repository is healthy"
           fi
-      
-      - name: "ðŸ’¬ Post Magic Completion Comment"
+
+      - name: "💬 Post Magic Completion Comment"
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
@@ -400,15 +347,11 @@ jobs:
             const blockchainHash = '${{ steps.blockchain.outputs.hash }}';
             const healedCount = ${{ steps.self_heal.outputs.count || 0 }};
             const riskScore = parseFloat('${{ steps.risk.outputs.score || 0.15 }}') * 100;
-            
-            let statusEmoji = 'âœ…';
-            let statusText = 'completed successfully';
-            
             await github.rest.issues.createComment({
               issue_number: ${{ needs.parse-magic-command.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ðŸª„ Magic Dynamic Switcher - Elite Repair Complete\n\n` +
+              body: `## 🪄 Magic Dynamic Switcher - Elite Repair Complete\n\n` +
                      `| Metric | Value |\n|--------|-------|\n` +
                      `| **Command** | \`${commandType}\` |\n` +
                      `| **Strategy** | \`${strategy}\` |\n` +
@@ -416,16 +359,16 @@ jobs:
                      `| **Risk Score** | ${riskScore.toFixed(1)}% |\n` +
                      `| **Self-Healed** | ${healedCount} issues |\n` +
                      `| **Blockchain** | \`${blockchainHash?.substring(0, 16)}...\` |\n\n` +
-                     `### âœ¨ Magic Applied\n` +
-                     `- ðŸ”„ Dynamic test shifting: **${strategy}**\n` +
-                     `- ðŸ©¹ Self-healing: **${healedCount > 0 ? 'Applied' : 'Not needed'}**\n` +
-                     `- â›“ï¸ Blockchain audit: **${blockchainHash ? 'Recorded' : 'Skipped'}**\n` +
-                     `- ðŸŽ¯ Risk assessment: **${riskScore > 50 ? 'âš ï¸ Review recommended' : 'âœ… Acceptable'}**\n\n` +
+                     `### ✨ Magic Applied\n` +
+                     `- 🔄 Dynamic test shifting: **${strategy}**\n` +
+                     `- 🩹 Self-healing: **${healedCount > 0 ? 'Applied' : 'Not needed'}**\n` +
+                     `- ⛓️ Blockchain audit: **${blockchainHash ? 'Recorded' : 'Skipped'}**\n` +
+                     `- 🎯 Risk assessment: **${riskScore > 50 ? '⚠️ Review recommended' : '✅ Acceptable'}**\n\n` +
                      `---\n` +
-                     `ðŸ¤– *Magic repair performed by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`
+                     `🤖 *Magic repair performed by Atomic Swarm Gods Elite v${{ env.ELITE_VERSION }}*`
             });
-      
-      - name: "ðŸ“¢ Notify on High Risk"
+
+      - name: "📢 Notify on High Risk"
         if: steps.risk.outputs.score > 0.5
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
@@ -434,23 +377,19 @@ jobs:
               issue_number: ${{ needs.parse-magic-command.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ðŸš¨ High Risk Alert\n\n` +
+              body: `## 🚨 High Risk Alert\n\n` +
                      `**Risk Score:** ${(parseFloat('${{ steps.risk.outputs.score }}') * 100).toFixed(1)}%\n\n` +
-                     `âš ï¸ Manual review recommended. Run \`@eliteAudit\` for detailed analysis.`
+                     `⚠️ Manual review recommended. Run \`@eliteAudit\` for detailed analysis.`
             });
 
-  # ============================================================
-  # PHASE 3: Magic Analytics & Reporting
-  # ============================================================
   magic-analytics:
     needs: [parse-magic-command, execute-magic-repair]
     if: always() && needs.parse-magic-command.outputs.command_type != 'unknown'
     runs-on: ubuntu-latest
     steps:
-      - name: "ðŸ“Š Update Magic Analytics Dashboard"
+      - name: "📊 Update Magic Analytics Dashboard"
         run: |
           mkdir -p .magic-analytics
-          
           cat >> .magic-analytics/commands.log << EOF
           {
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
@@ -460,12 +399,9 @@ jobs:
             "run_id": ${{ github.run_id }}
           }
           EOF
-          
-          # Calculate command statistics
           TOTAL_COMMANDS=$(jq -s 'length' .magic-analytics/commands.log 2>/dev/null || echo "0")
-          echo "ðŸ“Š Magic commands executed: $TOTAL_COMMANDS"
-          
-          echo "## ðŸª„ Magic Dynamic Switcher Analytics" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Magic commands executed: $TOTAL_COMMANDS"
+          echo "## 🪄 Magic Dynamic Switcher Analytics" >> $GITHUB_STEP_SUMMARY
           echo "- **Total commands:** $TOTAL_COMMANDS" >> $GITHUB_STEP_SUMMARY
           echo "- **Success rate:** 94%" >> $GITHUB_STEP_SUMMARY
           echo "- **Active strategies:** chaos, predictive, weighted, adaptive" >> $GITHUB_STEP_SUMMARY
