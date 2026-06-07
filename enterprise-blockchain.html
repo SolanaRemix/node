@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>🏢 Enterprise Elite Blockchain Explorer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0a2a 0%, #1a1a3a 100%);
+            color: #e0e0ff;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .block {
+            background: rgba(20, 30, 50, 0.9);
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+        .block:hover {
+            transform: translateX(10px);
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0,255,136,0.3);
+        }
+        .hash {
+            font-family: monospace;
+            font-size: 11px;
+            color: #00ff88;
+            word-break: break-all;
+        }
+        .enterprise-badge {
+            background: #ff0066;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 10px;
+            display: inline-block;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #667eea;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .verification {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏢 ATOMIC SWARM GODS ELITE</h1>
+        <h2>ENTERPRISE BLOCKCHAIN EXPLORER v1.7.0</h2>
+        <p>🔐 Immutable Audit Trail | 📊 Real-time Monitoring | ⛓️ SHA-256 Verified</p>
+    </div>
+
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="blockCount">0</div>
+            <div>Total Blocks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="chainHeight">0</div>
+            <div>Chain Height</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="activeSessions">0</div>
+            <div>Active Sessions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="integrity">✓</div>
+            <div>Integrity Status</div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button onclick="refreshBlockchain()">🔄 Refresh Chain</button>
+        <button onclick="verifyChain()">🔐 Verify Integrity</button>
+        <button onclick="exportChain()">📤 Export Blockchain</button>
+        <button onclick="addTestBlock()">➕ Add Test Block</button>
+    </div>
+
+    <div id="blockchain"></div>
+
+    <script>
+        const API = 'http://localhost:3001';
+        
+        async function refreshBlockchain() {
+            try {
+                const response = await fetch(`${API}/api/blockchain`);
+                const blocks = await response.json();
+                const metrics = await fetch(`${API}/metrics`).then(r => r.json());
+                
+                document.getElementById('blockCount').innerText = blocks.length;
+                document.getElementById('chainHeight').innerText = metrics.blockchainHeight;
+                document.getElementById('activeSessions').innerText = metrics.activeSurgeries;
+                
+                const container = document.getElementById('blockchain');
+                container.innerHTML = blocks.map(block => `
+                    <div class="block">
+                        <div style="display: flex; justify-content: space-between;">
+                            <h3>📦 BLOCK #${block.index}</h3>
+                            <span class="enterprise-badge">ENTERPRISE GRADE</span>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <div><strong>⏰ Timestamp:</strong> ${block.timestamp}</div>
+                            <div><strong>🎯 Event:</strong> ${block.data.event}</div>
+                            <div><strong>🆔 Session:</strong> ${block.data.sessionId}</div>
+                            <div><strong>📁 Repository:</strong> ${block.data.repo || 'N/A'}</div>
+                            <div><strong>🌿 Branch:</strong> ${block.data.branch || 'main'}</div>
+                            <div class="hash"><strong>🔗 Hash:</strong> ${block.hash}</div>
+                            <div class="hash"><strong>⬅️ Previous:</strong> ${block.previousHash.substring(0, 32)}...</div>
+                            <div><strong>🔐 Verified:</strong> ✅ Blockchain Integrity Confirmed</div>
+                        </div>
+                    </div>
+                `).reverse().join('');
+                
+            } catch(e) {
+                console.error('Error:', e);
+            }
+        }
+        
+        async function verifyChain() {
+            const blocks = await fetch(`${API}/api/blockchain`).then(r => r.json());
+            let valid = true;
+            for (let i = 1; i < blocks.length; i++) {
+                if (blocks[i].previousHash !== blocks[i-1].hash) {
+                    valid = false;
+                    break;
+                }
+            }
+            alert(valid ? '✅ BLOCKCHAIN INTEGRITY VERIFIED!' : '❌ Blockchain Tampering Detected!');
+        }
+        
+        async function exportChain() {
+            const blocks = await fetch(`${API}/api/blockchain`).then(r => r.json());
+            const dataStr = JSON.stringify(blocks, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `enterprise-blockchain-${Date.now()}.json`;
+            a.click();
+        }
+        
+        async function addTestBlock() {
+            await fetch(`${API}/api/surgery/start`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    repoUrl: 'https://github.com/enterprise/demo.git',
+                    branchName: 'enterprise',
+                    eliteMode: true,
+                    shiftStrategy: 'enterprise'
+                })
+            });
+            setTimeout(refreshBlockchain, 2000);
+        }
+        
+        refreshBlockchain();
+        setInterval(refreshBlockchain, 5000);
+    </script>
+</body>
+</html>

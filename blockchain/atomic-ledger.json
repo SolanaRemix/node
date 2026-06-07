@@ -1,0 +1,22 @@
+﻿{
+  "blockchain": {
+    "name": "ATOMIC LEDGER",
+    "version": "1.0.0",
+    "blocks": 3,
+    "genesisBlock": {
+      "timestamp": "2026-05-31T14:38:40.950Z",
+      "hash": "01ccd287e467e3ff42a306e4432f04a0e7a0adc020836e0f6bf643e2db5d255f",
+      "message": "Atomic Swarm Gods Elite - Enterprise Blockchain Active"
+    }
+  },
+  "security": {
+    "algorithm": "SHA-256",
+    "immutable": true,
+    "auditable": true
+  },
+  "status": {
+    "lastBlockIndex": 2,
+    "totalBlocks": 3,
+    "chainVerified": true
+  }
+}

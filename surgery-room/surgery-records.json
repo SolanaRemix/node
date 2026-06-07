@@ -1,5 +1,96 @@
 [
   {
+    "id": "1780845320598",
+    "repoName": "SolanaRemix",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-06-07T15:15:20.617Z"
+  },
+  {
+    "id": "1780845302760",
+    "repoName": "SolanaRemix",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-06-07T15:15:02.778Z"
+  },
+  {
+    "id": "1780844476580",
+    "repoName": "campaign",
+    "branchName": "Summer-Lunch",
+    "status": "running",
+    "startTime": "2026-06-07T15:01:19.898Z"
+  },
+  {
+    "id": "1780844240261",
+    "repoName": "CyberAi",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-06-07T14:57:20.282Z"
+  },
+  {
+    "id": "1780843697893",
+    "repoName": "CyberAi",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-06-07T14:48:17.906Z"
+  },
+  {
+    "id": "1780486302955",
+    "repoName": "SmartContractAudit",
+    "branchName": "surgery/elite-repair",
+    "status": "running",
+    "startTime": "2026-06-03T11:31:42.955Z",
+    "eliteMode": true
+  },
+  {
+    "id": "1780485517809",
+    "repoName": "terminal",
+    "branchName": "surgery/elite-repair",
+    "status": "running",
+    "startTime": "2026-06-03T11:18:37.810Z",
+    "eliteMode": true
+  },
+  {
+    "id": "1780485190245",
+    "repoName": "RemixOS",
+    "branchName": "surgery/elite-repair",
+    "status": "running",
+    "startTime": "2026-06-03T11:13:10.245Z",
+    "eliteMode": true
+  },
+  {
+    "id": "1780485060741",
+    "repoName": "92",
+    "branchName": "surgery/elite-repair",
+    "status": "running",
+    "startTime": "2026-06-03T11:11:00.742Z",
+    "eliteMode": true
+  },
+  {
+    "id": "1780241082177",
+    "repoName": "react",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-05-31T15:24:42.177Z",
+    "eliteMode": true
+  },
+  {
+    "id": "1780238358941",
+    "repoName": "node",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-05-31T14:39:18.941Z",
+    "eliteMode": true
+  },
+  {
+    "id": "1780238320950",
+    "repoName": "node",
+    "branchName": "main",
+    "status": "running",
+    "startTime": "2026-05-31T14:38:40.950Z",
+    "eliteMode": true
+  },
+  {
     "id": "1779906726509",
     "repoName": "PandaNG",
     "branchName": "surgery/ai-repair",

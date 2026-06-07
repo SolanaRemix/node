@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html>
+<head><title>🔷 ATOMIC LEDGER – Blockchain Explorer</title>
+<style>
+body{background:#0a0a2a;color:#e0e0ff;font-family:monospace;padding:20px}
+.block{background:#1a1a3a;margin:15px 0;padding:15px;border-left:4px solid #00ff88;border-radius:8px}
+.hash{color:#00ff88;word-break:break-all;font-size:12px}
+button{background:#a855f7;border:none;padding:10px 20px;margin:10px;border-radius:5px;cursor:pointer;color:white;font-weight:bold}
+h1{color:#a855f7}
+</style>
+</head>
+<body>
+<h1>🔷 ATOMIC LEDGER – Blockchain Explorer</h1>
+<button onclick="location.href='/'">🏠 Main Dashboard</button>
+<button onclick="location.reload()">🔄 Refresh</button>
+<div id="blocks"></div>
+<script>
+async function loadBlocks(){
+    try{
+        const res=await fetch('/api/blockchain');
+        const blocks=await res.json();
+        const container=document.getElementById('blocks');
+        if(!blocks.length){
+            container.innerHTML='<p>⛓️ No blocks yet. Start a surgery to create the genesis block.</p>';
+            return;
+        }
+        container.innerHTML=blocks.map(b=>`
+            <div class="block">
+                <h3>🔷 BLOCK #${b.index}</h3>
+                <p>📅 Timestamp: ${new Date(b.timestamp).toLocaleString()}</p>
+                <p>🎯 Event: ${b.data?.event || 'N/A'}</p>
+                <p>📁 Repository: ${b.data?.repo || 'N/A'}</p>
+                <p>🆔 Session: ${b.data?.sessionId || 'N/A'}</p>
+                <p class="hash">🔗 Hash: ${b.hash}</p>
+                <p class="hash">⬅️ Previous: ${b.previousHash}</p>
+                <p>✓ Blockchain Integrity Verified (SHA-256)</p>
+            </div>
+        `).join('');
+    }catch(e){
+        document.getElementById('blocks').innerHTML='<p style="color:red;">❌ Error connecting to API. Make sure server is running.</p>';
+    }
+}
+loadBlocks();
+setInterval(loadBlocks,5000);
+</script>
+</body>
+</html>

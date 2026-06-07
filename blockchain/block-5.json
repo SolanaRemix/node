@@ -1,0 +1,21 @@
+{
+  "index": 5,
+  "timestamp": "2026-06-03T11:19:48.807Z",
+  "hash": "9e413094c1a48f62a1330f9c00c8cac3469160e6efa647c4fa6d3b87ddc10122",
+  "previousHash": "74a003a4ab6e46bb39dd8c7c25b05c352083bd98bc96d836f3711cc65cc19a7c",
+  "data": {
+    "event": "repair_completed",
+    "sessionId": "1780485517809",
+    "repo": "terminal",
+    "fixes": 4,
+    "shiftMetrics": {
+      "count": 2,
+      "strategy": "adaptive",
+      "tests": [
+        "index.test.js\r",
+        "commands.test.ts\r"
+      ]
+    },
+    "timestamp": "2026-06-03T11:19:48.807Z"
+  }
+}

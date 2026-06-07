@@ -1,81 +1,23 @@
 {
   "name": "@atomic-gods/elite",
   "version": "1.7.0-elite",
-  "description": "⚡ ATOMIC SWARM GODS ELITE - Enterprise Auto-Repair with Dynamic Test Shifting & AI Auditing",
+  "description": "Atomic Swarm Gods Elite - Enterprise Auto-Repair System",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "npx tsc",
-    "test": "node --test",
-    "test:elite": "npm run audit:elite -- --mode=comprehensive",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.js",
-    "format": "prettier --write .",
-    "clean": "rm -rf node_modules dist package-lock.json",
-    "pipeline": "pwsh -File pipeline.ps1",
-    "audit:elite": "node scripts/elite-audit-runner.js",
-    "audit:dynamic": "node surgery-room/DynamicTestShifter.js --elite-mode --shift=auto",
-    "repair:adaptive": "ts-node src/enterprise/AdaptiveRepairOrchestrator.ts",
-    "shift:tests": "node surgery-room/DynamicTestShifter.js --elite-mode",
-    "repair:full": "npm run audit:dynamic && npm run repair:adaptive && npm run test:elite",
-    "oracle:train": "ts-node src/brain/OracleMemoryTrainer.ts",
-    "dashboard:elite": "node server.js --elite-dashboard",
-    "postinstall": "npm run build",
-    "prepublishOnly": "npm run test && npm run build"
+    "dev": "node --watch server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.0",
-    "socket.io": "^4.7.0",
-    "@tensorflow/tfjs-node": "^4.15.0",
-    "chaos-monkey": "^2.0.3",
-    "property-based-testing": "^3.1.0",
-    "audit-trail-blockchain": "^1.0.0",
-    "web3": "^4.3.0",
-    "fast-levenshtein": "^3.0.0",
-    "node-cron": "^3.0.3",
-    "winston": "^3.11.0",
-    "prometheus-client": "^1.1.0"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.0.0",
-    "@types/cors": "^2.8.17",
-    "@types/socket.io": "^4.0.0",
-    "eslint": "^9.0.0",
-    "prettier": "^3.0.0",
-    "typescript": "^5.9.3",
-    "ts-node": "^10.9.2",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0"
+    "socket.io": "^4.7.0"
   },
   "engines": {
-    "node": ">=18.0.0 <=24.0.0"
+    "node": ">=18.0.0"
   },
-  "keywords": [
-    "self-healing",
-    "auto-repair",
-    "ci-cd",
-    "ai-agents",
-    "dynamic-testing",
-    "chaos-engineering",
-    "elite-audit",
-    "enterprise",
-    "atomic-swarm"
-  ],
-  "author": "SolanaRemix Elite Team",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/SolanaRemix/node.git"
-  },
-  "elite": {
-    "auditLevel": "enterprise",
-    "dynamicShifting": true,
-    "aiOracle": true,
-    "blockchainAudit": true,
-    "selfHealingThreshold": 0.9997
+  "devDependencies": {
+    "@commitlint/cli": "20.5.3",
+    "@commitlint/config-conventional": "20.5.3"
   }
 }
