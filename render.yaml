@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: atomic-swarm-elite
+    runtime: node
+    repo: https://github.com/SolanaRemix/node
+    branch: main
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    domains:
+      - atomic-swarm-elite.onrender.com
