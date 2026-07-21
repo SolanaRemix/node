@@ -1,0 +1,41 @@
+name: "🧭 Enterprise V2 Validation"
+
+on:
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Dependency validation
+        run: npm ls --all >/tmp/npm-ls.txt
+
+      - name: Security audit
+        run: npm audit --omit=dev || true
+
+      - name: Secret hygiene gate
+        run: |
+          if grep -RInE "(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{36})" . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo "Potential secret material found";
+            exit 1;
+          fi
+
+      - name: V2 foundation tests
+        run: node --test tests/v2/enterprise-platform.test.js
+
+      - name: V1 baseline smoke
+        run: node --check server.js
