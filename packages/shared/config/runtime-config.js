@@ -6,7 +6,9 @@ function parseProviderList(envValue) {
 }
 
 function parseIntEnv(envValue, fallback) {
-  const parsed = Number(envValue);
+  const trimmed = String(envValue ?? '').trim();
+  if (trimmed === '') return fallback;
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 

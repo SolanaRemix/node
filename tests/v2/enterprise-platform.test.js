@@ -88,7 +88,7 @@ test('plugin-loader rejects path with .. traversal sequence', async () => {
   const manifest = { name: 'escape-plugin', version: '1.0.0', main: 'index.js' };
   loader.register(manifest);
 
-  const escapePath = tmpDir + '/subdir/../../etc/passwd';
+  const escapePath = path.join(tmpDir, 'subdir', '..', '..', 'etc', 'passwd');
   await assert.rejects(
     () => loader.load('escape-plugin', escapePath),
     /plugin path is not in allowed roots|no such file or directory/i
