@@ -45,6 +45,9 @@ export function createLedgerEngineService() {
     verify() {
       for (let index = 1; index < chain.length; index++) {
         if (chain[index].previousHash !== chain[index - 1].hash) return false;
+        const { hash, ...blockWithoutHash } = chain[index];
+        const expectedHash = crypto.createHash('sha256').update(stableSerialize(blockWithoutHash)).digest('hex');
+        if (hash !== expectedHash) return false;
       }
       return true;
     },

@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 export const v1ServerApiSurface = Object.freeze({
   health: '/health',
   metrics: '/metrics',
@@ -13,7 +15,7 @@ export const v1ServerApiSurface = Object.freeze({
 
 export function mapLegacyTaskToV2(message) {
   return {
-    id: `legacy-${Date.now()}`,
+    id: `legacy-${crypto.randomUUID()}`,
     type: message.type || 'repair-engine',
     payload: message.payload || {}
   };

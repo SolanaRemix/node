@@ -11,12 +11,19 @@ export function createOrchestratorService({ eventBus, registry, ledger }) {
     inFlight.delete(taskId);
   };
 
+  let unsubscribeTaskScheduled = null;
+
   return {
     name: ServiceNames.ORCHESTRATOR,
     status: 'idle',
     async start() {
-      eventBus.subscribe(EventTopics.TASK_SCHEDULED, async (task) => {
-        validateTask(task);
+      unsubscribeTaskScheduled = eventBus.subscribe(EventTopics.TASK_SCHEDULED, async (task) => {
+        try {
+          validateTask(task);
+        } catch (error) {
+          eventBus.publish(EventTopics.TASK_FAILED, { task, error: error.message });
+          return;
+        }
         queue.push(task);
         const executionPromise = (async () => {
           const target = registry.get(task.type);
@@ -44,6 +51,10 @@ export function createOrchestratorService({ eventBus, registry, ledger }) {
       });
     },
     async stop() {
+      if (unsubscribeTaskScheduled) {
+        unsubscribeTaskScheduled();
+        unsubscribeTaskScheduled = null;
+      }
       await Promise.allSettled([...inFlight.values()]);
       queue.length = 0;
     },

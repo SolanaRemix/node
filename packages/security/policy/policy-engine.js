@@ -2,8 +2,11 @@ import crypto from 'node:crypto';
 import { hasPermission } from '../auth/rbac.js';
 
 export class PolicyEngine {
-  constructor({ apiKeys = [], keySalt = process.env.ATOMIC_API_KEY_SALT || 'atomic-enterprise-v2' } = {}) {
-    this.keySalt = keySalt;
+  constructor({ apiKeys = [], keySalt = process.env.ATOMIC_API_KEY_SALT } = {}) {
+    if (apiKeys.length > 0 && !keySalt) {
+      throw new Error('ATOMIC_API_KEY_SALT must be set when API keys are configured');
+    }
+    this.keySalt = keySalt || 'atomic-enterprise-v2';
     this.apiKeys = new Set(apiKeys.map((apiKey) => this.#hash(apiKey)));
   }
 
