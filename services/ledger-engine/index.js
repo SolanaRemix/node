@@ -26,9 +26,10 @@ export function createLedgerEngineService() {
         event,
         payload
       };
-      block.hash = crypto.createHash('sha256').update(JSON.stringify(block)).digest('hex');
-      chain.push(block);
-      return block;
+      const hash = crypto.createHash('sha256').update(JSON.stringify(block)).digest('hex');
+      const finalBlock = { ...block, hash };
+      chain.push(finalBlock);
+      return finalBlock;
     },
     verify() {
       for (let index = 1; index < chain.length; index++) {

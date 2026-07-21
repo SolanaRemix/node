@@ -5,7 +5,7 @@ export const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   healthPollMs: Number(process.env.ATOMIC_HEALTH_POLL_MS || 30000),
   policyDefaultRole: process.env.ATOMIC_DEFAULT_ROLE || 'viewer',
   apiRateLimitPerMinute: Number(process.env.ATOMIC_API_RATE_LIMIT || 120),
-  enabledProviders: (process.env.ATOMIC_AI_PROVIDERS || 'openai,anthropic,gemini,ollama').split(',').map((x) => x.trim()).filter(Boolean)
+  enabledProviders: (process.env.ATOMIC_AI_PROVIDERS || 'openai,anthropic,gemini,ollama').split(',').map((provider) => provider.trim()).filter(Boolean)
 });
 
 export function createRuntimeConfig(overrides = {}) {

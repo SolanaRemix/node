@@ -14,7 +14,7 @@ export class ServiceRegistry {
   }
 
   list() {
-    return [...this.#services.values()].map((s) => ({ name: s.name, status: s.status || 'idle' }));
+    return [...this.#services.values()].map((service) => ({ name: service.name, status: service.status || 'idle' }));
   }
 
   async startAll(context) {

@@ -2,8 +2,9 @@ import crypto from 'node:crypto';
 import { hasPermission } from '../auth/rbac.js';
 
 export class PolicyEngine {
-  constructor({ apiKeys = [] } = {}) {
-    this.apiKeys = new Set(apiKeys.map((k) => this.#hash(k)));
+  constructor({ apiKeys = [], keySalt = process.env.ATOMIC_API_KEY_SALT || 'atomic-enterprise-v2' } = {}) {
+    this.keySalt = keySalt;
+    this.apiKeys = new Set(apiKeys.map((apiKey) => this.#hash(apiKey)));
   }
 
   authenticateApiKey(key) {
@@ -16,6 +17,6 @@ export class PolicyEngine {
   }
 
   #hash(value) {
-    return crypto.createHash('sha256').update(String(value)).digest('hex');
+    return crypto.scryptSync(String(value), this.keySalt, 64).toString('hex');
   }
 }

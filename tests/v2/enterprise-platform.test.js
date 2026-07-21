@@ -6,7 +6,7 @@ test('enterprise platform starts and registers core services', async () => {
   const platform = createEnterprisePlatform({ config: { enabledProviders: ['openai', 'anthropic'] } });
   const services = await platform.start();
 
-  const names = services.map((x) => x.name).sort();
+  const names = services.map((service) => service.name).sort();
   assert.deepEqual(names, ['ai-engine', 'deployment-engine', 'ledger-engine', 'monitoring-engine', 'orchestrator', 'repair-engine']);
 
   await platform.stop();
