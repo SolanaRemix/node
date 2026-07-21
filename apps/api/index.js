@@ -44,6 +44,9 @@ export function createEnterprisePlatform(options = {}) {
     },
     exportLedger() {
       return ledger.export();
+    },
+    verifyLedger() {
+      return ledger.verify();
     }
   };
 }

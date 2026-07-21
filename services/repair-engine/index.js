@@ -6,7 +6,14 @@ export function createRepairEngineService() {
     try {
       const parsed = new URL(value);
       const segments = parsed.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
-      return parsed.protocol === 'https:' && parsed.hostname === 'github.com' && segments.length >= 2;
+      const [owner, repo] = segments;
+      const ownerPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37})$/;
+      const repoPattern = /^[A-Za-z0-9._-]+$/;
+      return parsed.protocol === 'https:' &&
+        parsed.hostname === 'github.com' &&
+        segments.length >= 2 &&
+        ownerPattern.test(owner) &&
+        repoPattern.test(repo.replace(/\\.git$/i, ''));
     } catch {
       return false;
     }

@@ -46,6 +46,10 @@ test('ledger exports verifiable chain after task execution', async () => {
 
   const blocks = platform.exportLedger();
   assert.ok(blocks.length >= 2);
+  assert.equal(platform.verifyLedger(), true);
+  for (let index = 1; index < blocks.length; index++) {
+    assert.equal(blocks[index].previousHash, blocks[index - 1].hash);
+  }
 
   await platform.stop();
 });

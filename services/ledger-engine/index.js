@@ -2,6 +2,17 @@ import crypto from 'node:crypto';
 import { ServiceNames } from '../../packages/shared/contracts/platform-contracts.js';
 
 export function createLedgerEngineService() {
+  const stableSerialize = (value) => {
+    if (Array.isArray(value)) {
+      return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+    }
+    if (value && typeof value === 'object') {
+      const keys = Object.keys(value).sort();
+      return `{${keys.map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value);
+  };
+
   const chain = [
     {
       index: 0,
@@ -26,7 +37,7 @@ export function createLedgerEngineService() {
         event,
         payload
       };
-      const hash = crypto.createHash('sha256').update(JSON.stringify(block)).digest('hex');
+      const hash = crypto.createHash('sha256').update(stableSerialize(block)).digest('hex');
       const finalBlock = { ...block, hash };
       chain.push(finalBlock);
       return finalBlock;

@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import fs from 'node:fs';
 import path from 'node:path';
 import { validatePluginManifest } from './plugin-manifest.js';
 
@@ -7,7 +8,7 @@ export class PluginLoader {
   #allowedRoots;
 
   constructor({ allowedRoots = [] } = {}) {
-    this.#allowedRoots = allowedRoots.map((root) => path.resolve(root));
+    this.#allowedRoots = allowedRoots.map((root) => fs.realpathSync(path.resolve(root)));
   }
 
   register(manifest) {
@@ -23,9 +24,13 @@ export class PluginLoader {
   async load(name, absolutePath) {
     const plugin = this.#plugins.get(name);
     if (!plugin) throw new Error(`plugin not registered: ${name}`);
-    const resolvedPath = path.resolve(absolutePath);
+    const resolvedPath = fs.realpathSync(path.resolve(absolutePath));
     if (this.#allowedRoots.length > 0) {
-      const isAllowed = this.#allowedRoots.some((root) => resolvedPath === root || resolvedPath.startsWith(`${root}${path.sep}`));
+      const candidatePath = process.platform === 'win32' ? resolvedPath.toLowerCase() : resolvedPath;
+      const isAllowed = this.#allowedRoots.some((root) => {
+        const normalizedRoot = process.platform === 'win32' ? root.toLowerCase() : root;
+        return candidatePath === normalizedRoot || candidatePath.startsWith(`${normalizedRoot}${path.sep}`);
+      });
       if (!isAllowed) {
         throw new Error(`plugin path is not in allowed roots: ${resolvedPath}`);
       }
