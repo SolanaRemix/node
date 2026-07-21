@@ -26,10 +26,9 @@ export class PluginLoader {
     if (!plugin) throw new Error(`plugin not registered: ${name}`);
     const resolvedPath = fs.realpathSync(path.resolve(absolutePath));
     if (this.#allowedRoots.length > 0) {
-      const candidatePath = process.platform === 'win32' ? resolvedPath.toLowerCase() : resolvedPath;
       const isAllowed = this.#allowedRoots.some((root) => {
-        const normalizedRoot = process.platform === 'win32' ? root.toLowerCase() : root;
-        return candidatePath === normalizedRoot || candidatePath.startsWith(`${normalizedRoot}${path.sep}`);
+        const relativePath = path.relative(root, resolvedPath);
+        return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
       });
       if (!isAllowed) {
         throw new Error(`plugin path is not in allowed roots: ${resolvedPath}`);

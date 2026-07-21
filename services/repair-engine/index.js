@@ -13,7 +13,7 @@ export function createRepairEngineService() {
         parsed.hostname === 'github.com' &&
         segments.length >= 2 &&
         ownerPattern.test(owner) &&
-        repoPattern.test(repo.replace(/\\.git$/i, ''));
+      repoPattern.test(repo.replace(/\.git$/i, ''));
     } catch {
       return false;
     }

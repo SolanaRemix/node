@@ -3,9 +3,11 @@ import { EventTopics, ServiceNames, validateTask } from '../../packages/shared/c
 export function createOrchestratorService({ eventBus, registry, ledger }) {
   const queue = [];
   const inFlight = new Map();
-  const completeTask = (taskId) => {
+  const dequeueTask = (taskId) => {
     const index = queue.findIndex((queuedTask) => queuedTask.id === taskId);
     if (index >= 0) queue.splice(index, 1);
+  };
+  const completeTask = (taskId) => {
     inFlight.delete(taskId);
   };
 
@@ -19,11 +21,13 @@ export function createOrchestratorService({ eventBus, registry, ledger }) {
         const executionPromise = (async () => {
           const target = registry.get(task.type);
           if (!target || typeof target.execute !== 'function') {
+            dequeueTask(task.id);
             completeTask(task.id);
             const error = new Error(`unknown task target: ${task.type}`);
             eventBus.publish(EventTopics.TASK_FAILED, { task, error: error.message });
             return;
           }
+          dequeueTask(task.id);
           try {
             const result = await target.execute(task);
             completeTask(task.id);

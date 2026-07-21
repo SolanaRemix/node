@@ -30,11 +30,7 @@ jobs:
           node scripts/check-security-audit.js /tmp/npm-audit.json
 
       - name: Secret hygiene gate
-        run: |
-          if grep -RInE "(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{36})" . --exclude-dir=node_modules --exclude-dir=.git; then
-            echo "Potential secret material found";
-            exit 1;
-          fi
+        uses: gitleaks/gitleaks-action@v2
 
       - name: V2 foundation tests
         run: node --test tests/v2/enterprise-platform.test.js
