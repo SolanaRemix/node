@@ -127,7 +127,6 @@ jobs:
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: ${{ matrix.node }}.x
-          cache: 'npm'
 
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v3.0.0
         with:
@@ -286,6 +285,7 @@ jobs:
           echo "  • Agent efficiency: 94%"
           echo "  • WASM optimization: Active"
           echo "  • AI confidence: 99.97%"
+          mkdir -p .swarm-analytics
           cat > .swarm-analytics/completion.json << EOF
           {
             "swarm_id": "$SWARM_ID",
