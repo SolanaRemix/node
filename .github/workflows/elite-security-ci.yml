@@ -39,8 +39,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
-        # ✅ FIXED SHA – valid for codeql-action/upload-sarif v3.28.16
-        uses: github/codeql-action/upload-sarif@457a9af84bc20daec146c9461446407a30ba047b # v3.28.16
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 

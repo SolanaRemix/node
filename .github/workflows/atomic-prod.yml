@@ -145,7 +145,8 @@ jobs:
 
       - name: "🚀 Elite Repair Execution"
         run: |
-          case "${{ inputs.repair_type }}" in
+          REPAIR_TYPE="${{ inputs.repair_type || github.event.inputs.repair_type || 'elite-full' }}"
+          case "$REPAIR_TYPE" in
             elite-full)
               echo "🏥 Running ELITE FULL REPAIR with dynamic shifting"
               rm -rf node_modules pnpm-lock.yaml package-lock.json
@@ -192,7 +193,7 @@ jobs:
               ;;
             *)
               echo "🚀 Running standard repair"
-              npm install
+              pnpm install --no-frozen-lockfile
               npm run build || echo "No build script"
               npm test || echo "No test script"
               ;;

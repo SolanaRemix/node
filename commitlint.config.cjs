@@ -23,10 +23,11 @@ module.exports = {
       'api',
       'dashboard',
       'release',
-      'deps'
+      'deps',
+      'ci'
     ]],
-    'subject-case': [2, 'always', 'lower-case'],
-    'header-max-length': [2, 'always', 100]
+    'subject-case': [0],
+    'header-max-length': [2, 'always', 120]
   },
   helpUrl: 'https://www.conventionalcommits.org/'
 };

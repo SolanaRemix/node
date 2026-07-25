@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   quality-gates:
@@ -31,6 +32,8 @@ jobs:
 
       - name: Secret hygiene gate
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: V2 foundation tests
         run: node --test tests/v2/enterprise-platform.test.js
