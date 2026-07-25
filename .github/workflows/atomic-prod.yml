@@ -145,7 +145,13 @@ jobs:
 
       - name: "🚀 Elite Repair Execution"
         run: |
-          REPAIR_TYPE="${{ inputs.repair_type || github.event.inputs.repair_type || 'elite-full' }}"
+          REPAIR_TYPE="${{ inputs.repair_type }}"
+          if [ -z "$REPAIR_TYPE" ]; then
+            REPAIR_TYPE="${{ github.event.inputs.repair_type }}"
+          fi
+          if [ -z "$REPAIR_TYPE" ]; then
+            REPAIR_TYPE="elite-full"
+          fi
           case "$REPAIR_TYPE" in
             elite-full)
               echo "🏥 Running ELITE FULL REPAIR with dynamic shifting"
@@ -193,7 +199,7 @@ jobs:
               ;;
             *)
               echo "🚀 Running standard repair"
-              pnpm install --no-frozen-lockfile
+              pnpm install --no-frozen-lockfile || npm install
               npm run build || echo "No build script"
               npm test || echo "No test script"
               ;;
