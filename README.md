@@ -296,6 +296,15 @@ curl http://localhost:3001/api/blockchain
 - ✅ SHA-256 cryptographic verification
 - ✅ Chain integrity validation
 
+### v1.7.1 (Foundation) – SWARM ARB MODULE
+- ✅ `src/swarm-arb` production-oriented foundation scaffold
+- ✅ 10-agent registry with execution authority restricted to GOD-06/GOD-09
+- ✅ Canonical opportunity/message/gate contracts
+- ✅ Fail-lower autopilot state controller
+- ✅ RPC health scoring/race/quarantine skeleton
+- ✅ Marginfi v2 flash-loan provider abstraction + pinned solana-pipkit version guard
+- ✅ Core invariants test suite under `test/swarm-arb`
+
 ### v1.8.0 (Q3 2026)
 - 🔷 Smart contract integration
 - 🔷 Multi-chain support
