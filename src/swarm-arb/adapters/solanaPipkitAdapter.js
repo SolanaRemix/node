@@ -1,11 +1,8 @@
 import { SOLANA_PIPKIT_VERSION } from './interfaces.js';
 
 export class SolanaPipkitAdapter {
-  constructor(version = SOLANA_PIPKIT_VERSION) {
-    if (version !== SOLANA_PIPKIT_VERSION) {
-      throw new Error(`Unsupported solana-pipkit version ${version}. Expected ${SOLANA_PIPKIT_VERSION}.`);
-    }
-    this.version = version;
+  constructor() {
+    this.version = SOLANA_PIPKIT_VERSION;
   }
 
   getCapabilities() {
