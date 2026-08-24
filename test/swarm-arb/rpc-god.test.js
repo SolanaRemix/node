@@ -26,4 +26,12 @@ describe('RpcGod', () => {
     assert.equal(raced.length, 1);
     assert.equal(raced[0].name, 'rpc-b');
   });
+
+  it('caps error rate in basis points', () => {
+    const god = new RpcGod([
+      { name: 'rpc-a', url: 'https://a', latencyMs: 20, slotLag: 0, errorRateBps: 9_990, healthy: true },
+    ]);
+    god.markFailure('rpc-a');
+    assert.equal(god.endpoints[0].errorRateBps, 10_000);
+  });
 });

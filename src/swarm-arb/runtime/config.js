@@ -24,7 +24,7 @@ export function redactSecrets(config) {
   return {
     ...config,
     secrets: Object.fromEntries(
-      Object.entries(config.secrets).map(([k, v]) => [k, `${v.slice(0, 2)}***`]),
+      Object.keys(config.secrets).map((k) => [k, '[REDACTED]']),
     ),
   };
 }

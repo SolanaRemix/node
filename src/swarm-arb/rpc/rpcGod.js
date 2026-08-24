@@ -1,9 +1,13 @@
 export function rpcScore(rpc) {
-  if (!rpc.healthy || rpc.quarantinedUntil && rpc.quarantinedUntil > Date.now()) {
+  if (!isEndpointUsable(rpc)) {
     return Number.NEGATIVE_INFINITY;
   }
 
   return -(rpc.latencyMs) - (rpc.slotLag * 100) - (rpc.errorRateBps * 2);
+}
+
+export function isEndpointUsable(rpc, now = Date.now()) {
+  return Boolean(rpc.healthy) && !((rpc.quarantinedUntil ?? 0) > now);
 }
 
 export class RpcGod {
@@ -19,14 +23,16 @@ export class RpcGod {
 
   raceHealthy() {
     return this.endpoints
-      .filter((ep) => rpcScore(ep) !== Number.NEGATIVE_INFINITY)
-      .sort((a, b) => rpcScore(b) - rpcScore(a));
+      .map((ep) => ({ ep, score: rpcScore(ep) }))
+      .filter((item) => isEndpointUsable(item.ep))
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.ep);
   }
 
   markFailure(name, quarantineMs = 60_000) {
     const endpoint = this.endpoints.find((ep) => ep.name === name);
     if (!endpoint) return;
-    endpoint.errorRateBps += 100;
+    endpoint.errorRateBps = Math.min(10_000, endpoint.errorRateBps + 100);
     endpoint.quarantinedUntil = Date.now() + quarantineMs;
     endpoint.healthy = false;
   }

@@ -40,7 +40,22 @@ export class FailureController {
     }
   }
 
-  onSuccess() {
+  onSuccess(now = Date.now()) {
+    if (this.mode === ExecutionMode.HALTED) {
+      return;
+    }
+    if (now < this.cooldownUntil) {
+      this.consecutiveFailures = Math.min(this.consecutiveFailures, 1);
+      this.mode = ExecutionMode.CONSERVATIVE;
+      return;
+    }
+    this.consecutiveFailures = 0;
+    this.mode = ExecutionMode.NORMAL;
+    this.circuitOpen = false;
+    this.cooldownUntil = 0;
+  }
+
+  reset() {
     this.consecutiveFailures = 0;
     this.mode = ExecutionMode.NORMAL;
     this.circuitOpen = false;
@@ -91,9 +106,7 @@ export class FailureController {
 
   canExecute(now = Date.now()) {
     if (this.mode === ExecutionMode.HALTED) {
-      if (now >= this.cooldownUntil) {
-        return false;
-      }
+      // Hard circuit breaker: requires explicit manual reset.
       return false;
     }
 
