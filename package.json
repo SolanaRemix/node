@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "npm run test:swarm-arb",
+    "test:swarm-arb": "node --test test/swarm-arb/**/*.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
