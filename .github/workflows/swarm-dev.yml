@@ -285,6 +285,7 @@ jobs:
           echo "  • Agent efficiency: 94%"
           echo "  • WASM optimization: Active"
           echo "  • AI confidence: 99.97%"
+          mkdir -p .swarm-analytics
           cat > .swarm-analytics/completion.json << EOF
           {
             "swarm_id": "$SWARM_ID",
