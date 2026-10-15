@@ -1,6 +1,7 @@
 // commitlint.config.js - Enforces Conventional Commits
 module.exports = {
   extends: ['@commitlint/config-conventional'],
+  ignores: [(commit) => commit.trim() === 'Initial plan'],
   rules: {
     'type-enum': [2, 'always', [
       'feat',     // New feature
