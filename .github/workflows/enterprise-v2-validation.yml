@@ -1,0 +1,44 @@
+name: "🧭 Enterprise V2 Validation"
+
+on:
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Dependency validation
+        run: npm ls --all >/tmp/npm-ls.txt
+
+      - name: Security audit
+        run: |
+          npm audit --omit=dev --json > /tmp/npm-audit.json || true
+          node scripts/check-security-audit.js /tmp/npm-audit.json
+
+      - name: Secret hygiene gate
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: V2 foundation tests
+        run: node --test tests/v2/enterprise-platform.test.js
+
+      - name: V1 baseline smoke
+        run: node --check server.js

@@ -11,7 +11,6 @@ node_modules/
 .yarn/
 yarn-error.log
 yarn-debug.log
-package-lock.json
 pnpm-lock.yaml
 yarn.lock
 
