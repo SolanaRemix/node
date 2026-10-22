@@ -255,7 +255,7 @@ jobs:
             full|*)
               echo "🏥 Full elite repair mode"
               npm audit fix --force || true
-              npm run build || (echo "⚠️ Build failed - attempting repair" && npm install --force && npm run build)
+              npm run build --if-present || (echo "⚠️ Build failed - attempting repair" && npm install --force && npm run build --if-present)
               npm test || (echo "⚠️ Tests failed - self-healing applied")
               ;;
           esac
